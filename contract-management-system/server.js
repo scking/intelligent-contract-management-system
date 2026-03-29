@@ -521,10 +521,11 @@ function saveBase64Upload(file) {
 function runImport(mode, file) {
   const filePath = saveBase64Upload(file);
   const result = spawnSync('python3', [importScript, mode, filePath], { encoding: 'utf8' });
+  const parsed = JSON.parse(result.stdout || '{}');
   if (result.status !== 0) {
-    throw new Error(result.stderr || result.stdout || 'Import parser failed');
+    throw new Error(parsed.error || result.stderr || 'Import parser failed');
   }
-  return JSON.parse(result.stdout || '{}');
+  return parsed;
 }
 
 const server = http.createServer(async (req, res) => {
@@ -733,6 +734,16 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req);
       const result = runImport('contract', body.file || {});
       return sendJson(res, 200, '解析成功', result);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/import/ocr' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const result = runImport('ocr', body.file || {});
+      return sendJson(res, 200, '识别成功', result);
     } catch (error) {
       return sendJson(res, 500, error.message, null, 500);
     }

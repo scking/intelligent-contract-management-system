@@ -293,7 +293,11 @@ async function submitImport(event) {
   const file = input?.files?.[0];
   if (!file) return;
   const payload = { file: await fileToPayload(file) };
-  const endpoint = state.importMode === 'excel' ? '/api/import/excel' : '/api/import/contract-file';
+  const endpoint = state.importMode === 'excel'
+    ? '/api/import/excel'
+    : state.importMode === 'ocr'
+      ? '/api/import/ocr'
+      : '/api/import/contract-file';
   const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
   state.importResult = result;
   render();
@@ -353,7 +357,7 @@ function dashboardView() {
       </div>
       <div class="columns-2">
         <section class="panel">
-          <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-import-word">解析合同</button><button class="secondary" data-action="open-create">新建合同</button></div></div>
+          <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-import-word">解析合同</button><button class="secondary" data-action="open-import-ocr">OCR 识别</button><button class="secondary" data-action="open-create">新建合同</button></div></div>
           <div class="table-wrap"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
           ${(state.dashboard?.latestContracts || []).map((item) => `
             <tr>
@@ -413,7 +417,8 @@ function contractsView() {
           </select>
           <button class="ghost" data-action="filter-contracts">筛选</button>
           <button class="secondary" data-action="open-import-excel">导入 Excel/CSV</button>
-          <button class="secondary" data-action="open-import-word">解析 Word/TXT</button>
+          <button class="secondary" data-action="open-import-word">解析 Word/PDF/TXT</button>
+          <button class="secondary" data-action="open-import-ocr">OCR 识别</button>
           <button class="primary" data-action="open-create">新建合同</button>
         </div>
       </div>
@@ -573,19 +578,20 @@ function contractModal() {
 function importModal() {
   if (!state.importOpen) return '';
   const isExcel = state.importMode === 'excel';
+  const isOcr = state.importMode === 'ocr';
   const result = state.importResult;
   return `
     <div class="modal-mask">
       <div class="modal fade-in import-modal">
-        <div class="panel-head"><h3>${isExcel ? '导入 Excel/CSV 台账' : '解析 Word/TXT 合同'}</h3><button class="ghost" data-action="close-import">关闭</button></div>
+        <div class="panel-head"><h3>${isExcel ? '导入 Excel/CSV 台账' : isOcr ? 'OCR 识别 PDF/图片' : '解析 Word/PDF/TXT 合同'}</h3><button class="ghost" data-action="close-import">关闭</button></div>
         <form id="import-form" class="form-grid">
           <div class="upload-box">
-            <input id="import-file" type="file" accept="${isExcel ? '.xlsx,.csv' : '.docx,.txt'}" />
-            <span class="muted">${isExcel ? '支持 .xlsx / .csv，按表头自动映射字段。' : '支持 .docx / .txt，自动抽取合同关键信息并回填。'}</span>
+            <input id="import-file" type="file" accept="${isExcel ? '.xlsx,.csv' : isOcr ? '.pdf,.png,.jpg,.jpeg,.webp' : '.docx,.pdf,.txt'}" />
+            <span class="muted">${isExcel ? '支持 .xlsx / .csv，按表头自动映射字段与节点。' : isOcr ? '支持 PDF/图片。当前机器可直接解析文本型 PDF；图片 OCR 需要后续补本机 OCR 引擎。' : '支持 .docx / .pdf / .txt，自动抽取合同关键信息、付款节点和履约节点并回填。'}</span>
           </div>
           <div class="form-actions"><button class="primary" type="submit">开始解析</button></div>
         </form>
-        ${result ? (isExcel ? `<div class="sub-panel"><h4>识别结果</h4><div class="table-wrap"><table class="table"><thead><tr><th>合同名称</th><th>相对方</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody>${(result.records || []).map((row, index) => `<tr><td>${row.name || '-'}</td><td>${row.partnerName || '-'}</td><td>${row.amount || '-'}</td><td>${row.status || '-'}</td><td><button class="secondary" data-action="apply-import-record" data-index="${index}">回填到表单</button></td></tr>`).join('')}</tbody></table></div></div>` : `<div class="sub-panel"><h4>识别结果</h4><div class="key-grid"><div><label>合同名称</label><p>${result.record?.name || '-'}</p></div><div><label>相对方</label><p>${result.record?.partnerName || '-'}</p></div><div><label>金额</label><p>${result.record?.amount || '-'}</p></div><div><label>签订日期</label><p>${result.record?.signDate || '-'}</p></div></div><p class="detail-summary">${result.record?.summary || ''}</p><div class="form-actions"><button class="primary" data-action="apply-import-single" type="button">回填到新建合同</button></div></div>`) : ''}
+        ${result ? (isExcel ? `<div class="sub-panel"><h4>识别结果</h4><div class="table-wrap"><table class="table"><thead><tr><th>合同名称</th><th>相对方</th><th>金额</th><th>付款节点</th><th>履约节点</th><th>操作</th></tr></thead><tbody>${(result.records || []).map((row, index) => `<tr><td>${row.name || '-'}</td><td>${row.partnerName || '-'}</td><td>${row.amount || '-'}</td><td>${row.paymentPlan?.length || 0}</td><td>${row.milestones?.length || 0}</td><td><button class="secondary" data-action="apply-import-record" data-index="${index}">回填到表单</button></td></tr>`).join('')}</tbody></table></div></div>` : `<div class="sub-panel"><h4>识别结果</h4><div class="key-grid"><div><label>合同名称</label><p>${result.record?.name || '-'}</p></div><div><label>相对方</label><p>${result.record?.partnerName || '-'}</p></div><div><label>金额</label><p>${result.record?.amount || '-'}</p></div><div><label>签订日期</label><p>${result.record?.signDate || '-'}</p></div><div><label>付款节点</label><p>${result.record?.paymentPlan?.length || 0}</p></div><div><label>履约节点</label><p>${result.record?.milestones?.length || 0}</p></div></div><p class="detail-summary">${result.record?.summary || ''}</p><div class="form-actions"><button class="primary" data-action="apply-import-single" type="button">回填到新建合同</button></div></div>`) : ''}
       </div>
     </div>`;
 }
@@ -705,6 +711,7 @@ function bindEvents() {
   document.querySelectorAll('[data-action="open-create"]').forEach((btn) => btn.addEventListener('click', () => openModal()));
   document.querySelectorAll('[data-action="open-import-excel"]').forEach((btn) => btn.addEventListener('click', () => openImport('excel')));
   document.querySelectorAll('[data-action="open-import-word"]').forEach((btn) => btn.addEventListener('click', () => openImport('contract')));
+  document.querySelectorAll('[data-action="open-import-ocr"]').forEach((btn) => btn.addEventListener('click', () => openImport('ocr')));
   document.querySelectorAll('[data-action="close-modal"]').forEach((btn) => btn.addEventListener('click', closeModal));
   document.querySelectorAll('[data-action="close-import"]').forEach((btn) => btn.addEventListener('click', closeImport));
   document.querySelectorAll('[data-action="close-detail"]').forEach((btn) => btn.addEventListener('click', closeDetail));

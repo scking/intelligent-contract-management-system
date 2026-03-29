@@ -2,6 +2,7 @@
 import csv
 import json
 import re
+import subprocess
 import sys
 import zipfile
 import xml.etree.ElementTree as ET
@@ -27,8 +28,30 @@ KEYWORDS = {
     'signDate': ['签订日期', '签署日期'],
     'effectiveDate': ['生效日期'],
     'expireDate': ['到期日期', '截止日期', '终止日期'],
-    'projectName': ['项目名称', '项目'],
+    'projectName': ['项目名称'],
     'summary': ['合同内容', '主要内容', '备注', '摘要'],
+    'templateName': ['合同模板', '模板名称'],
+    'type': ['合同类型'],
+    'status': ['状态'],
+    'riskLevel': ['风险等级'],
+    'archiveStatus': ['归档状态'],
+    'paymentStatus': ['付款状态'],
+    'signingMethod': ['签署方式', '签约方式'],
+}
+
+PAYMENT_HEADERS = {
+    'phase': ['付款节点', '付款阶段', '期次', '节点'],
+    'type': ['收付类型', '类型'],
+    'amount': ['节点金额', '付款金额', '金额'],
+    'planDate': ['计划付款日', '计划日期', '付款日期'],
+    'percent': ['付款比例', '比例'],
+}
+
+MILESTONE_HEADERS = {
+    'name': ['履约节点', '里程碑', '交付节点'],
+    'owner': ['负责人', '责任人'],
+    'dueDate': ['计划完成时间', '计划日期', '截止日期'],
+    'status': ['履约状态', '状态'],
 }
 
 
@@ -36,10 +59,18 @@ def normalize_key(value: str) -> str:
     return re.sub(r'\s+', '', str(value or '')).strip().lower()
 
 
+def first_present(source, names):
+    normalized = {normalize_key(k): v for k, v in source.items()}
+    for name in names:
+        key = normalize_key(name)
+        if key in normalized and str(normalized[key]).strip():
+            return str(normalized[key]).strip()
+    return ''
+
+
 def read_csv(path: Path):
     with path.open('r', encoding='utf-8-sig', newline='') as f:
-        rows = list(csv.reader(f))
-    return rows
+        return list(csv.reader(f))
 
 
 def read_xlsx(path: Path):
@@ -66,8 +97,7 @@ def read_xlsx(path: Path):
             raise RuntimeError('Cannot resolve first worksheet')
         if not target.startswith('worksheets/'):
             target = target.replace('../', '')
-        sheet_path = f'xl/{target}'
-        sheet = ET.fromstring(zf.read(sheet_path))
+        sheet = ET.fromstring(zf.read(f'xl/{target}'))
         rows = []
         for row in sheet.findall('.//a:sheetData/a:row', NS):
             values = []
@@ -96,29 +126,85 @@ def rows_to_records(rows):
     return records
 
 
+def parse_payment_plan_from_text(text: str):
+    plans = []
+    patterns = [
+        r'(首付款|预付款|进度款|尾款|质保金)[^\n]{0,20}?([0-9]+(?:\.[0-9]{1,2})?)\s*元[^\n]{0,20}?(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2})?',
+        r'第([一二三四五六七八九十0-9]+)期[^\n]{0,20}?([0-9]+(?:\.[0-9]{1,2})?)\s*元[^\n]{0,20}?(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2})?',
+    ]
+    for pattern in patterns:
+        for match in re.finditer(pattern, text):
+            phase = match.group(1)
+            amount = match.group(2)
+            plan_date = (match.group(3) or '').replace('年', '-').replace('月', '-').replace('日', '').replace('/', '-').replace('.', '-')
+            plans.append({
+                'id': f'plan-{len(plans)+1}',
+                'phase': phase,
+                'type': '应收',
+                'amount': amount,
+                'planDate': plan_date,
+                'percent': ''
+            })
+    return plans[:6]
+
+
+def parse_milestones_from_text(text: str):
+    milestones = []
+    keywords = ['交付', '验收', '上线', '到货', '签署', '归档', '实施']
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    for line in lines:
+        if any(keyword in line for keyword in keywords):
+            date = ''
+            found = re.search(r'(20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2})', line)
+            if found:
+                date = found.group(1).replace('年', '-').replace('月', '-').replace('日', '').replace('/', '-').replace('.', '-')
+            milestones.append({
+                'id': f'ms-{len(milestones)+1}',
+                'name': line[:40],
+                'owner': '',
+                'dueDate': date,
+                'status': '未开始'
+            })
+    return milestones[:6]
+
+
 def map_excel_record(record):
     mapped = {
-        'type': '销售',
-        'status': '草稿',
+        'type': first_present(record, KEYWORDS['type']) or '销售',
+        'status': first_present(record, KEYWORDS['status']) or '草稿',
         'currency': 'CNY',
-        'riskLevel': '正常',
+        'riskLevel': first_present(record, KEYWORDS['riskLevel']) or '正常',
         'performanceStatus': '未开始',
-        'archiveStatus': '未归档',
-        'paymentStatus': '待维护',
+        'archiveStatus': first_present(record, KEYWORDS['archiveStatus']) or '未归档',
+        'paymentStatus': first_present(record, KEYWORDS['paymentStatus']) or '待维护',
+        'templateName': first_present(record, KEYWORDS['templateName']),
+        'signingMethod': first_present(record, KEYWORDS['signingMethod']) or '线下签署',
     }
-    normalized = {normalize_key(k): v for k, v in record.items()}
     for field, candidates in KEYWORDS.items():
-        for candidate in candidates:
-            if normalize_key(candidate) in normalized and str(normalized[normalize_key(candidate)]).strip():
-                mapped[field] = str(normalized[normalize_key(candidate)]).strip()
-                break
+        value = first_present(record, candidates)
+        if value:
+            mapped[field] = value
 
-    if '合同类型' in record and record['合同类型']:
-        mapped['type'] = record['合同类型']
-    if '状态' in record and record['状态']:
-        mapped['status'] = record['状态']
-    if '风险等级' in record and record['风险等级']:
-        mapped['riskLevel'] = record['风险等级']
+    payment = {field: first_present(record, names) for field, names in PAYMENT_HEADERS.items()}
+    if any(payment.values()):
+        mapped['paymentPlan'] = [{
+            'id': 'plan-1',
+            'phase': payment.get('phase') or '付款节点1',
+            'type': payment.get('type') or '应收',
+            'amount': payment.get('amount') or '',
+            'planDate': payment.get('planDate') or '',
+            'percent': payment.get('percent') or '',
+        }]
+
+    milestone = {field: first_present(record, names) for field, names in MILESTONE_HEADERS.items()}
+    if any(milestone.values()):
+        mapped['milestones'] = [{
+            'id': 'ms-1',
+            'name': milestone.get('name') or '履约节点1',
+            'owner': milestone.get('owner') or '',
+            'dueDate': milestone.get('dueDate') or '',
+            'status': milestone.get('status') or '未开始',
+        }]
     return mapped
 
 
@@ -135,6 +221,7 @@ def extract_text_pairs(text: str):
                     break
             if field in result:
                 break
+
     amount_match = re.search(r'([0-9]+(?:\.[0-9]{1,2})?)\s*元', text)
     if amount_match and 'amount' not in result:
         result['amount'] = amount_match.group(1)
@@ -144,6 +231,9 @@ def extract_text_pairs(text: str):
     dates = re.findall(r'20\d{2}[-/.年]\d{1,2}[-/.月]\d{1,2}', text)
     if dates and 'signDate' not in result:
         result['signDate'] = dates[0].replace('年', '-').replace('月', '-').replace('日', '').replace('/', '-').replace('.', '-')
+
+    result['paymentPlan'] = parse_payment_plan_from_text(text)
+    result['milestones'] = parse_milestones_from_text(text)
     return result
 
 
@@ -169,20 +259,47 @@ def parse_text(path: Path):
     return extracted
 
 
+def parse_pdf(path: Path):
+    proc = subprocess.run(['pdftotext', str(path), '-'], capture_output=True, text=True)
+    if proc.returncode != 0:
+        raise RuntimeError(proc.stderr.strip() or 'pdftotext failed')
+    text = proc.stdout.strip()
+    if not text:
+        raise RuntimeError('PDF has no extractable text; OCR not available on this machine yet')
+    extracted = extract_text_pairs(text)
+    extracted['summary'] = text[:400]
+    return extracted
+
+
+def parse_image(path: Path):
+    raise RuntimeError('Image OCR is not available yet on this machine; install tesseract or add OCR service support')
+
+
+def apply_defaults(data):
+    data.setdefault('type', '销售')
+    data.setdefault('status', '草稿')
+    data.setdefault('currency', 'CNY')
+    data.setdefault('riskLevel', '正常')
+    data.setdefault('performanceStatus', '未开始')
+    data.setdefault('archiveStatus', '未归档')
+    data.setdefault('paymentStatus', '待维护')
+    data.setdefault('signingMethod', '线下签署')
+    data.setdefault('paymentPlan', [])
+    data.setdefault('milestones', [])
+    return data
+
+
 def main():
     if len(sys.argv) < 3:
-        print(json.dumps({'error': 'usage: parse_import.py <excel|contract> <path>'}, ensure_ascii=False))
+        print(json.dumps({'error': 'usage: parse_import.py <excel|contract|ocr> <path>'}, ensure_ascii=False))
         sys.exit(1)
 
     mode = sys.argv[1]
     path = Path(sys.argv[2])
     if mode == 'excel':
-        if path.suffix.lower() == '.csv':
-            rows = read_csv(path)
-        else:
-            rows = read_xlsx(path)
+        rows = read_csv(path) if path.suffix.lower() == '.csv' else read_xlsx(path)
         records = rows_to_records(rows)
-        mapped = [map_excel_record(record) for record in records]
+        mapped = [apply_defaults(map_excel_record(record)) for record in records]
         print(json.dumps({'records': mapped, 'count': len(mapped)}, ensure_ascii=False))
         return
 
@@ -190,16 +307,20 @@ def main():
         ext = path.suffix.lower()
         if ext == '.docx':
             data = parse_docx(path)
+        elif ext == '.pdf':
+            data = parse_pdf(path)
         else:
             data = parse_text(path)
-        data.setdefault('type', '销售')
-        data.setdefault('status', '草稿')
-        data.setdefault('currency', 'CNY')
-        data.setdefault('riskLevel', '正常')
-        data.setdefault('performanceStatus', '未开始')
-        data.setdefault('archiveStatus', '未归档')
-        data.setdefault('paymentStatus', '待维护')
-        print(json.dumps({'record': data}, ensure_ascii=False))
+        print(json.dumps({'record': apply_defaults(data)}, ensure_ascii=False))
+        return
+
+    if mode == 'ocr':
+        ext = path.suffix.lower()
+        if ext == '.pdf':
+            data = parse_pdf(path)
+        else:
+            data = parse_image(path)
+        print(json.dumps({'record': apply_defaults(data)}, ensure_ascii=False))
         return
 
     print(json.dumps({'error': f'unknown mode: {mode}'}, ensure_ascii=False))
@@ -207,4 +328,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as exc:
+        print(json.dumps({'error': str(exc)}, ensure_ascii=False))
+        sys.exit(1)
