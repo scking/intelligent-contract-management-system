@@ -186,6 +186,7 @@ textarea { min-height: 96px; resize: vertical; }
 .drawer {
   width: min(760px, 100%); background: #fffaf2; height: calc(100vh - 40px); border-radius: 28px; box-shadow: 0 30px 80px rgba(18,24,28,.3); padding: 24px; overflow: auto;
 }
+.import-modal { width: min(980px, 100%); }
 .modal form { display: grid; gap: 14px; }
 .modal-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
 .modal-grid.three-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }

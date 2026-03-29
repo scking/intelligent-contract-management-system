@@ -19,7 +19,10 @@ const state = {
   filters: { keyword: '', status: '' },
   pendingFiles: [],
   pendingPaymentPlan: [],
-  pendingMilestones: []
+  pendingMilestones: [],
+  importOpen: false,
+  importMode: 'excel',
+  importResult: null
 };
 
 function formatMoney(value) {
@@ -54,6 +57,14 @@ function downloadAttachment(file) {
   link.href = file.content || '#';
   link.download = file.name || 'attachment';
   link.click();
+}
+
+async function fileToPayload(file) {
+  return {
+    name: file.name,
+    size: file.size,
+    content: await toDataUrl(file)
+  };
 }
 
 async function api(path, options = {}) {
@@ -140,6 +151,19 @@ function closeModal() {
   state.pendingFiles = [];
   state.pendingPaymentPlan = [];
   state.pendingMilestones = [];
+  render();
+}
+
+function openImport(mode = 'excel') {
+  state.importOpen = true;
+  state.importMode = mode;
+  state.importResult = null;
+  render();
+}
+
+function closeImport() {
+  state.importOpen = false;
+  state.importResult = null;
   render();
 }
 
@@ -246,6 +270,35 @@ function removeMilestone(id) {
   render();
 }
 
+function applyImportRecord(record) {
+  if (!record) return;
+  state.modalOpen = true;
+  state.editingContract = null;
+  state.pendingFiles = [];
+  state.pendingPaymentPlan = Array.isArray(record.paymentPlan) ? record.paymentPlan : [];
+  state.pendingMilestones = Array.isArray(record.milestones) ? record.milestones : [];
+  state.importOpen = false;
+  state.importResult = null;
+  state.editingContract = {
+    ...record,
+    amount: record.amount || '',
+    taxRate: record.taxRate || 6
+  };
+  render();
+}
+
+async function submitImport(event) {
+  event.preventDefault();
+  const input = document.querySelector('#import-file');
+  const file = input?.files?.[0];
+  if (!file) return;
+  const payload = { file: await fileToPayload(file) };
+  const endpoint = state.importMode === 'excel' ? '/api/import/excel' : '/api/import/contract-file';
+  const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+  state.importResult = result;
+  render();
+}
+
 function loginView() {
   return `
     <div class="login-shell fade-in">
@@ -300,7 +353,7 @@ function dashboardView() {
       </div>
       <div class="columns-2">
         <section class="panel">
-          <div class="panel-head"><h3>最新合同</h3><button class="secondary" data-action="open-create">新建合同</button></div>
+          <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-import-word">解析合同</button><button class="secondary" data-action="open-create">新建合同</button></div></div>
           <div class="table-wrap"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
           ${(state.dashboard?.latestContracts || []).map((item) => `
             <tr>
@@ -359,6 +412,8 @@ function contractsView() {
             ${['草稿', '待提交', '审批中', '已生效', '已驳回', '已作废', '已完结'].map((item) => `<option ${state.filters.status === item ? 'selected' : ''}>${item}</option>`).join('')}
           </select>
           <button class="ghost" data-action="filter-contracts">筛选</button>
+          <button class="secondary" data-action="open-import-excel">导入 Excel/CSV</button>
+          <button class="secondary" data-action="open-import-word">解析 Word/TXT</button>
           <button class="primary" data-action="open-create">新建合同</button>
         </div>
       </div>
@@ -515,6 +570,26 @@ function contractModal() {
     </div>`;
 }
 
+function importModal() {
+  if (!state.importOpen) return '';
+  const isExcel = state.importMode === 'excel';
+  const result = state.importResult;
+  return `
+    <div class="modal-mask">
+      <div class="modal fade-in import-modal">
+        <div class="panel-head"><h3>${isExcel ? '导入 Excel/CSV 台账' : '解析 Word/TXT 合同'}</h3><button class="ghost" data-action="close-import">关闭</button></div>
+        <form id="import-form" class="form-grid">
+          <div class="upload-box">
+            <input id="import-file" type="file" accept="${isExcel ? '.xlsx,.csv' : '.docx,.txt'}" />
+            <span class="muted">${isExcel ? '支持 .xlsx / .csv，按表头自动映射字段。' : '支持 .docx / .txt，自动抽取合同关键信息并回填。'}</span>
+          </div>
+          <div class="form-actions"><button class="primary" type="submit">开始解析</button></div>
+        </form>
+        ${result ? (isExcel ? `<div class="sub-panel"><h4>识别结果</h4><div class="table-wrap"><table class="table"><thead><tr><th>合同名称</th><th>相对方</th><th>金额</th><th>状态</th><th>操作</th></tr></thead><tbody>${(result.records || []).map((row, index) => `<tr><td>${row.name || '-'}</td><td>${row.partnerName || '-'}</td><td>${row.amount || '-'}</td><td>${row.status || '-'}</td><td><button class="secondary" data-action="apply-import-record" data-index="${index}">回填到表单</button></td></tr>`).join('')}</tbody></table></div></div>` : `<div class="sub-panel"><h4>识别结果</h4><div class="key-grid"><div><label>合同名称</label><p>${result.record?.name || '-'}</p></div><div><label>相对方</label><p>${result.record?.partnerName || '-'}</p></div><div><label>金额</label><p>${result.record?.amount || '-'}</p></div><div><label>签订日期</label><p>${result.record?.signDate || '-'}</p></div></div><p class="detail-summary">${result.record?.summary || ''}</p><div class="form-actions"><button class="primary" data-action="apply-import-single" type="button">回填到新建合同</button></div></div>`) : ''}
+      </div>
+    </div>`;
+}
+
 function detailDrawer() {
   if (!state.detailOpen || !state.contractDetail) return '';
   const item = state.contractDetail;
@@ -618,6 +693,7 @@ function renderApp() {
         ${pageContent}
       </main>
       ${contractModal()}
+      ${importModal()}
       ${detailDrawer()}
     </div>`;
 }
@@ -627,9 +703,13 @@ function bindEvents() {
   document.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', () => { state.page = btn.dataset.nav; render(); }));
   document.querySelectorAll('[data-action="logout"]').forEach((btn) => btn.addEventListener('click', logout));
   document.querySelectorAll('[data-action="open-create"]').forEach((btn) => btn.addEventListener('click', () => openModal()));
+  document.querySelectorAll('[data-action="open-import-excel"]').forEach((btn) => btn.addEventListener('click', () => openImport('excel')));
+  document.querySelectorAll('[data-action="open-import-word"]').forEach((btn) => btn.addEventListener('click', () => openImport('contract')));
   document.querySelectorAll('[data-action="close-modal"]').forEach((btn) => btn.addEventListener('click', closeModal));
+  document.querySelectorAll('[data-action="close-import"]').forEach((btn) => btn.addEventListener('click', closeImport));
   document.querySelectorAll('[data-action="close-detail"]').forEach((btn) => btn.addEventListener('click', closeDetail));
   document.querySelector('#contract-form')?.addEventListener('submit', submitContractForm);
+  document.querySelector('#import-form')?.addEventListener('submit', submitImport);
   document.querySelector('#contract-files')?.addEventListener('change', handleFileSelect);
   document.querySelectorAll('[data-action="edit-contract"]').forEach((btn) => btn.addEventListener('click', () => {
     const item = state.contracts.find((contract) => contract.id === btn.dataset.id);
@@ -655,6 +735,8 @@ function bindEvents() {
   document.querySelectorAll('[data-action="remove-plan"]').forEach((btn) => btn.addEventListener('click', () => removePaymentPlan(btn.dataset.id)));
   document.querySelectorAll('[data-action="add-milestone"]').forEach((btn) => btn.addEventListener('click', addMilestone));
   document.querySelectorAll('[data-action="remove-milestone"]').forEach((btn) => btn.addEventListener('click', () => removeMilestone(btn.dataset.id)));
+  document.querySelectorAll('[data-action="apply-import-record"]').forEach((btn) => btn.addEventListener('click', () => applyImportRecord(state.importResult?.records?.[Number(btn.dataset.index)])));
+  document.querySelectorAll('[data-action="apply-import-single"]').forEach((btn) => btn.addEventListener('click', () => applyImportRecord(state.importResult?.record)));
   document.querySelectorAll('[data-plan-id]').forEach((input) => input.addEventListener('input', (event) => updatePaymentPlan(event.target.dataset.planId, event.target.dataset.field, event.target.value)));
   document.querySelectorAll('[data-milestone-id]').forEach((input) => input.addEventListener('input', (event) => updateMilestone(event.target.dataset.milestoneId, event.target.dataset.field, event.target.value)));
 }

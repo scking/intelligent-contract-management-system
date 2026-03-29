@@ -460,6 +460,38 @@
   ],
   "logs": [
     {
+      "id": "log-1774783285989",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T11:21:25.989Z"
+    },
+    {
+      "id": "log-1774783267929",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T11:21:07.929Z"
+    },
+    {
+      "id": "log-1774783267572",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T11:21:07.572Z"
+    },
+    {
+      "id": "log-1774782721063",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T11:12:01.063Z"
+    },
+    {
       "id": "log-1774782647238",
       "type": "登录",
       "operator": "admin",
@@ -572,6 +604,22 @@
     "7b2a92f2f73ad96801f314f1115b1ff5": {
       "userId": "u-admin",
       "createdAt": "2026-03-29T11:10:47.238Z"
+    },
+    "b83c72fe3bae09322c3afe02780dd11c": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T11:12:01.063Z"
+    },
+    "3e3efa2637edc3a8ad9c3ca9092ac85d": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T11:21:07.572Z"
+    },
+    "5ee413c0502b591673f9163d710aeecd": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T11:21:07.929Z"
+    },
+    "926d47b5a0cc798e2372e44bc8299e8c": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T11:21:25.989Z"
     }
   }
 }

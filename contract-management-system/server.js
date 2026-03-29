@@ -2,16 +2,20 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const publicDir = path.join(__dirname, 'public');
 const dataDir = path.join(__dirname, 'data');
+const uploadDir = path.join(dataDir, 'uploads');
 const dbFile = path.join(dataDir, 'db.json');
+const importScript = path.join(__dirname, 'scripts', 'parse_import.py');
 const port = Number(process.env.PORT || 3060);
 
 fs.mkdirSync(dataDir, { recursive: true });
+fs.mkdirSync(uploadDir, { recursive: true });
 
 function now() {
   return new Date().toISOString();
@@ -504,6 +508,25 @@ function nextPendingApproval(db, contractId) {
   return db.approvals.find((item) => item.contractId === contractId && item.status === '待处理');
 }
 
+function saveBase64Upload(file) {
+  const matches = String(file.content || '').match(/^data:(.+);base64,(.+)$/);
+  if (!matches) throw new Error('Invalid upload payload');
+  const ext = path.extname(file.name || '') || '';
+  const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}${ext}`;
+  const target = path.join(uploadDir, filename);
+  fs.writeFileSync(target, Buffer.from(matches[2], 'base64'));
+  return target;
+}
+
+function runImport(mode, file) {
+  const filePath = saveBase64Upload(file);
+  const result = spawnSync('python3', [importScript, mode, filePath], { encoding: 'utf8' });
+  if (result.status !== 0) {
+    throw new Error(result.stderr || result.stdout || 'Import parser failed');
+  }
+  return JSON.parse(result.stdout || '{}');
+}
+
 const server = http.createServer(async (req, res) => {
   if (req.method === 'OPTIONS') {
     return sendJson(res, 200, 'ok', {});
@@ -690,6 +713,26 @@ const server = http.createServer(async (req, res) => {
       addLog(db, '审批处理', session.user.username, contract?.code || approval.id, `审批${body.status}`);
       saveDb(db);
       return sendJson(res, 200, '处理成功', approval);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/import/excel' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const result = runImport('excel', body.file || {});
+      return sendJson(res, 200, '解析成功', result);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/import/contract-file' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const result = runImport('contract', body.file || {});
+      return sendJson(res, 200, '解析成功', result);
     } catch (error) {
       return sendJson(res, 500, error.message, null, 500);
     }
