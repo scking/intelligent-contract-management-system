@@ -1,4 +1,7 @@
+import { request } from './http.js';
+
 const mockDelay = (data, ms = 120) => new Promise((resolve) => setTimeout(() => resolve(data), ms));
+const USE_MOCK = true;
 
 const contracts = [
   {
@@ -53,18 +56,22 @@ const importPreview = [
 ];
 
 export async function fetchContracts() {
+  if (!USE_MOCK) return request('/api/contracts');
   return mockDelay(contracts.map(({ paymentPlans, milestones, approvals, summary, ...rest }) => rest));
 }
 
 export async function fetchContractDetail(code) {
+  if (!USE_MOCK) return request(`/api/contracts/${code}`);
   return mockDelay(contracts.find((item) => item.code === code) || contracts[0]);
 }
 
 export async function fetchImportPreview() {
+  if (!USE_MOCK) return request('/api/imports/preview');
   return mockDelay(importPreview);
 }
 
 export async function fetchImportCapabilities() {
+  if (!USE_MOCK) return request('/api/imports/capabilities');
   return mockDelay({
     excel: true,
     docx: true,
