@@ -1,0 +1,288 @@
+{
+  "users": [
+    {
+      "id": "u-admin",
+      "username": "admin",
+      "passwordHash": "ad89b64d66caa8e30e5d5ce4a9763f4ecc205814c412175f3e2c50027471426d",
+      "name": "系统管理员",
+      "role": "超级管理员",
+      "dept": "总经办",
+      "scope": "全部数据"
+    },
+    {
+      "id": "u-legal",
+      "username": "legal",
+      "passwordHash": "01590eddf566292761da1a74f9238b66dae0a9c3f3ca4db809596202db33e515",
+      "name": "法务专员",
+      "role": "法务",
+      "dept": "法务部",
+      "scope": "全公司"
+    },
+    {
+      "id": "u-finance",
+      "username": "finance",
+      "passwordHash": "072ec03666830b1568b2edc4ba0aaaa567b35d09feb67c41c790e1ddc7275b9f",
+      "name": "财务经理",
+      "role": "财务",
+      "dept": "财务部",
+      "scope": "金额相关"
+    }
+  ],
+  "partners": [
+    {
+      "id": "p-001",
+      "name": "杭州云象科技有限公司",
+      "type": "客户",
+      "creditCode": "91330100MA2CLOUD88",
+      "legalPerson": "王林",
+      "contact": "陈楠",
+      "phone": "13800001111",
+      "tags": [
+        "重点客户",
+        "年度框架"
+      ],
+      "address": "杭州市滨江区网商路 88 号",
+      "riskLevel": "低",
+      "createdAt": "2026-03-29T10:49:37.532Z"
+    },
+    {
+      "id": "p-002",
+      "name": "上海启航供应链有限公司",
+      "type": "供应商",
+      "creditCode": "91310101SHIP9001",
+      "legalPerson": "赵敏",
+      "contact": "徐航",
+      "phone": "13900002222",
+      "tags": [
+        "核心供应商"
+      ],
+      "address": "上海市浦东新区张江路 66 号",
+      "riskLevel": "中",
+      "createdAt": "2026-03-29T10:49:37.535Z"
+    }
+  ],
+  "templates": [
+    {
+      "id": "tpl-001",
+      "name": "销售合同标准版",
+      "category": "销售",
+      "version": "V3.2",
+      "status": "启用",
+      "owner": "法务部",
+      "placeholders": [
+        "甲方",
+        "乙方",
+        "合同金额",
+        "签订日期",
+        "履约期限"
+      ],
+      "updatedAt": "2026-03-29T10:49:37.535Z"
+    },
+    {
+      "id": "tpl-002",
+      "name": "采购合同标准版",
+      "category": "采购",
+      "version": "V2.1",
+      "status": "启用",
+      "owner": "法务部",
+      "placeholders": [
+        "采购方",
+        "供应商",
+        "税率",
+        "付款节点"
+      ],
+      "updatedAt": "2026-03-29T10:49:37.535Z"
+    }
+  ],
+  "contracts": [
+    {
+      "id": "ct-001",
+      "code": "HT-2026-0001",
+      "name": "云平台年度服务合同",
+      "type": "销售",
+      "amount": 860000,
+      "taxRate": 6,
+      "status": "审批中",
+      "partnerId": "p-001",
+      "partnerName": "杭州云象科技有限公司",
+      "ownerDept": "销售中心",
+      "ownerName": "李川",
+      "signDate": "2026-03-20",
+      "effectiveDate": "2026-04-01",
+      "expireDate": "2027-03-31",
+      "approvalStage": "财务审核",
+      "riskLevel": "正常",
+      "performanceStatus": "未开始",
+      "paymentStatus": "待收款",
+      "archiveStatus": "未归档",
+      "summary": "企业云平台 1 年 SaaS 服务及驻场支持。",
+      "files": [
+        {
+          "id": "f-001",
+          "name": "合同正文.docx",
+          "type": "原件",
+          "uploadedAt": "2026-03-29T10:49:37.535Z"
+        }
+      ],
+      "createdAt": "2026-03-29T10:49:37.535Z",
+      "updatedAt": "2026-03-29T10:49:37.535Z"
+    },
+    {
+      "id": "ct-002",
+      "code": "HT-2026-0002",
+      "name": "仓储设备采购合同",
+      "type": "采购",
+      "amount": 320000,
+      "taxRate": 13,
+      "status": "已生效",
+      "partnerId": "p-002",
+      "partnerName": "上海启航供应链有限公司",
+      "ownerDept": "采购部",
+      "ownerName": "何静",
+      "signDate": "2026-02-15",
+      "effectiveDate": "2026-02-20",
+      "expireDate": "2026-09-30",
+      "approvalStage": "已完成",
+      "riskLevel": "预警",
+      "performanceStatus": "执行中",
+      "paymentStatus": "部分付款",
+      "archiveStatus": "已归档",
+      "summary": "仓储自动分拣设备采购及安装调试服务。",
+      "files": [
+        {
+          "id": "f-002",
+          "name": "签署版.pdf",
+          "type": "扫描件",
+          "uploadedAt": "2026-03-29T10:49:37.535Z"
+        }
+      ],
+      "createdAt": "2026-03-29T10:49:37.535Z",
+      "updatedAt": "2026-03-29T10:49:37.535Z"
+    }
+  ],
+  "approvals": [
+    {
+      "id": "ap-001",
+      "contractId": "ct-001",
+      "nodeName": "部门审批",
+      "assignee": "张总",
+      "status": "通过",
+      "comment": "合同金额合理，同意提交法务。",
+      "createdAt": "2026-03-29T10:49:37.535Z",
+      "handledAt": "2026-03-29T10:49:37.535Z"
+    },
+    {
+      "id": "ap-002",
+      "contractId": "ct-001",
+      "nodeName": "法务审核",
+      "assignee": "法务专员",
+      "status": "通过",
+      "comment": "条款无重大风险，建议保留违约责任条款。",
+      "createdAt": "2026-03-29T10:49:37.535Z",
+      "handledAt": "2026-03-29T10:49:37.535Z"
+    },
+    {
+      "id": "ap-003",
+      "contractId": "ct-001",
+      "nodeName": "财务审核",
+      "assignee": "财务经理",
+      "status": "待处理",
+      "comment": "",
+      "createdAt": "2026-03-29T10:49:37.535Z",
+      "handledAt": ""
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-001",
+      "contractId": "ct-001",
+      "contractCode": "HT-2026-0001",
+      "type": "应收",
+      "phase": "首付款",
+      "amount": 300000,
+      "planDate": "2026-04-10",
+      "actualDate": "",
+      "status": "待收",
+      "remark": "签约后 10 个工作日内收取。"
+    },
+    {
+      "id": "pay-002",
+      "contractId": "ct-002",
+      "contractCode": "HT-2026-0002",
+      "type": "应付",
+      "phase": "设备到货款",
+      "amount": 160000,
+      "planDate": "2026-04-05",
+      "actualDate": "2026-03-28",
+      "status": "已付",
+      "remark": "设备到货验收后付款。"
+    }
+  ],
+  "reminders": [
+    {
+      "id": "rm-001",
+      "contractId": "ct-001",
+      "title": "财务审核待办提醒",
+      "remindDate": "2026-03-30",
+      "channel": "站内信",
+      "status": "待发送"
+    },
+    {
+      "id": "rm-002",
+      "contractId": "ct-002",
+      "title": "合同到期前 30 天提醒",
+      "remindDate": "2026-08-31",
+      "channel": "邮件",
+      "status": "待发送"
+    }
+  ],
+  "archive": [
+    {
+      "id": "ar-001",
+      "contractId": "ct-002",
+      "contractCode": "HT-2026-0002",
+      "location": "A区-3柜-2层",
+      "electronicStatus": "已归档",
+      "physicalStatus": "已入柜",
+      "borrowStatus": "在库",
+      "archivedBy": "法务专员",
+      "archivedAt": "2026-03-29T10:49:37.535Z"
+    }
+  ],
+  "logs": [
+    {
+      "id": "log-1774781427842",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T10:50:27.842Z"
+    },
+    {
+      "id": "log-1774781425162",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T10:50:25.162Z"
+    },
+    {
+      "id": "log-001",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "初始化系统管理员账号。",
+      "createdAt": "2026-03-29T10:49:37.535Z"
+    }
+  ],
+  "sessions": {
+    "dc398db584321da93d48a99d7ddd4c65": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T10:50:25.162Z"
+    },
+    "4c00c85a4e8219ee3623d4aa06c2cc6a": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T10:50:27.842Z"
+    }
+  }
+}

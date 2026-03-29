@@ -1,0 +1,562 @@
+import http from 'node:http';
+import fs from 'node:fs';
+import path from 'node:path';
+import crypto from 'node:crypto';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const publicDir = path.join(__dirname, 'public');
+const dataDir = path.join(__dirname, 'data');
+const dbFile = path.join(dataDir, 'db.json');
+const port = Number(process.env.PORT || 3060);
+
+fs.mkdirSync(dataDir, { recursive: true });
+
+function now() {
+  return new Date().toISOString();
+}
+
+function hashPassword(password) {
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
+const seed = {
+  users: [
+    {
+      id: 'u-admin',
+      username: 'admin',
+      passwordHash: hashPassword('Admin@123456'),
+      name: '系统管理员',
+      role: '超级管理员',
+      dept: '总经办',
+      scope: '全部数据'
+    },
+    {
+      id: 'u-legal',
+      username: 'legal',
+      passwordHash: hashPassword('Legal@123456'),
+      name: '法务专员',
+      role: '法务',
+      dept: '法务部',
+      scope: '全公司'
+    },
+    {
+      id: 'u-finance',
+      username: 'finance',
+      passwordHash: hashPassword('Finance@123456'),
+      name: '财务经理',
+      role: '财务',
+      dept: '财务部',
+      scope: '金额相关'
+    }
+  ],
+  partners: [
+    {
+      id: 'p-001',
+      name: '杭州云象科技有限公司',
+      type: '客户',
+      creditCode: '91330100MA2CLOUD88',
+      legalPerson: '王林',
+      contact: '陈楠',
+      phone: '13800001111',
+      tags: ['重点客户', '年度框架'],
+      address: '杭州市滨江区网商路 88 号',
+      riskLevel: '低',
+      createdAt: now()
+    },
+    {
+      id: 'p-002',
+      name: '上海启航供应链有限公司',
+      type: '供应商',
+      creditCode: '91310101SHIP9001',
+      legalPerson: '赵敏',
+      contact: '徐航',
+      phone: '13900002222',
+      tags: ['核心供应商'],
+      address: '上海市浦东新区张江路 66 号',
+      riskLevel: '中',
+      createdAt: now()
+    }
+  ],
+  templates: [
+    {
+      id: 'tpl-001',
+      name: '销售合同标准版',
+      category: '销售',
+      version: 'V3.2',
+      status: '启用',
+      owner: '法务部',
+      placeholders: ['甲方', '乙方', '合同金额', '签订日期', '履约期限'],
+      updatedAt: now()
+    },
+    {
+      id: 'tpl-002',
+      name: '采购合同标准版',
+      category: '采购',
+      version: 'V2.1',
+      status: '启用',
+      owner: '法务部',
+      placeholders: ['采购方', '供应商', '税率', '付款节点'],
+      updatedAt: now()
+    }
+  ],
+  contracts: [
+    {
+      id: 'ct-001',
+      code: 'HT-2026-0001',
+      name: '云平台年度服务合同',
+      type: '销售',
+      amount: 860000,
+      taxRate: 6,
+      status: '审批中',
+      partnerId: 'p-001',
+      partnerName: '杭州云象科技有限公司',
+      ownerDept: '销售中心',
+      ownerName: '李川',
+      signDate: '2026-03-20',
+      effectiveDate: '2026-04-01',
+      expireDate: '2027-03-31',
+      approvalStage: '财务审核',
+      riskLevel: '正常',
+      performanceStatus: '未开始',
+      paymentStatus: '待收款',
+      archiveStatus: '未归档',
+      summary: '企业云平台 1 年 SaaS 服务及驻场支持。',
+      files: [
+        { id: 'f-001', name: '合同正文.docx', type: '原件', uploadedAt: now() }
+      ],
+      createdAt: now(),
+      updatedAt: now()
+    },
+    {
+      id: 'ct-002',
+      code: 'HT-2026-0002',
+      name: '仓储设备采购合同',
+      type: '采购',
+      amount: 320000,
+      taxRate: 13,
+      status: '已生效',
+      partnerId: 'p-002',
+      partnerName: '上海启航供应链有限公司',
+      ownerDept: '采购部',
+      ownerName: '何静',
+      signDate: '2026-02-15',
+      effectiveDate: '2026-02-20',
+      expireDate: '2026-09-30',
+      approvalStage: '已完成',
+      riskLevel: '预警',
+      performanceStatus: '执行中',
+      paymentStatus: '部分付款',
+      archiveStatus: '已归档',
+      summary: '仓储自动分拣设备采购及安装调试服务。',
+      files: [
+        { id: 'f-002', name: '签署版.pdf', type: '扫描件', uploadedAt: now() }
+      ],
+      createdAt: now(),
+      updatedAt: now()
+    }
+  ],
+  approvals: [
+    {
+      id: 'ap-001',
+      contractId: 'ct-001',
+      nodeName: '部门审批',
+      assignee: '张总',
+      status: '通过',
+      comment: '合同金额合理，同意提交法务。',
+      createdAt: now(),
+      handledAt: now()
+    },
+    {
+      id: 'ap-002',
+      contractId: 'ct-001',
+      nodeName: '法务审核',
+      assignee: '法务专员',
+      status: '通过',
+      comment: '条款无重大风险，建议保留违约责任条款。',
+      createdAt: now(),
+      handledAt: now()
+    },
+    {
+      id: 'ap-003',
+      contractId: 'ct-001',
+      nodeName: '财务审核',
+      assignee: '财务经理',
+      status: '待处理',
+      comment: '',
+      createdAt: now(),
+      handledAt: ''
+    }
+  ],
+  payments: [
+    {
+      id: 'pay-001',
+      contractId: 'ct-001',
+      contractCode: 'HT-2026-0001',
+      type: '应收',
+      phase: '首付款',
+      amount: 300000,
+      planDate: '2026-04-10',
+      actualDate: '',
+      status: '待收',
+      remark: '签约后 10 个工作日内收取。'
+    },
+    {
+      id: 'pay-002',
+      contractId: 'ct-002',
+      contractCode: 'HT-2026-0002',
+      type: '应付',
+      phase: '设备到货款',
+      amount: 160000,
+      planDate: '2026-04-05',
+      actualDate: '2026-03-28',
+      status: '已付',
+      remark: '设备到货验收后付款。'
+    }
+  ],
+  reminders: [
+    {
+      id: 'rm-001',
+      contractId: 'ct-001',
+      title: '财务审核待办提醒',
+      remindDate: '2026-03-30',
+      channel: '站内信',
+      status: '待发送'
+    },
+    {
+      id: 'rm-002',
+      contractId: 'ct-002',
+      title: '合同到期前 30 天提醒',
+      remindDate: '2026-08-31',
+      channel: '邮件',
+      status: '待发送'
+    }
+  ],
+  archive: [
+    {
+      id: 'ar-001',
+      contractId: 'ct-002',
+      contractCode: 'HT-2026-0002',
+      location: 'A区-3柜-2层',
+      electronicStatus: '已归档',
+      physicalStatus: '已入柜',
+      borrowStatus: '在库',
+      archivedBy: '法务专员',
+      archivedAt: now()
+    }
+  ],
+  logs: [
+    {
+      id: 'log-001',
+      type: '登录',
+      operator: 'admin',
+      target: '系统',
+      detail: '初始化系统管理员账号。',
+      createdAt: now()
+    }
+  ],
+  sessions: {}
+};
+
+function ensureDb() {
+  if (!fs.existsSync(dbFile)) {
+    fs.writeFileSync(dbFile, JSON.stringify(seed, null, 2), 'utf8');
+  }
+}
+
+function loadDb() {
+  ensureDb();
+  return JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+}
+
+function saveDb(db) {
+  fs.writeFileSync(dbFile, JSON.stringify(db, null, 2), 'utf8');
+}
+
+function sendJson(res, code, msg, data, status = 200) {
+  res.writeHead(status, {
+    'Content-Type': 'application/json; charset=utf-8',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS'
+  });
+  res.end(JSON.stringify({ code, msg, data, timestamp: Date.now() }));
+}
+
+function sendFile(res, filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const typeMap = {
+    '.html': 'text/html; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png'
+  };
+  if (!fs.existsSync(filePath)) {
+    res.writeHead(404);
+    res.end('Not Found');
+    return;
+  }
+  res.writeHead(200, { 'Content-Type': typeMap[ext] || 'text/plain; charset=utf-8' });
+  fs.createReadStream(filePath).pipe(res);
+}
+
+function parseBody(req) {
+  return new Promise((resolve, reject) => {
+    let body = '';
+    req.on('data', (chunk) => {
+      body += chunk;
+      if (body.length > 2 * 1024 * 1024) {
+        reject(new Error('Payload too large'));
+      }
+    });
+    req.on('end', () => {
+      try {
+        resolve(body ? JSON.parse(body) : {});
+      } catch (error) {
+        reject(error);
+      }
+    });
+  });
+}
+
+function getSession(req, db) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const session = db.sessions[token];
+  if (!session) return null;
+  const user = db.users.find((item) => item.id === session.userId);
+  if (!user) return null;
+  return { token, user };
+}
+
+function addLog(db, type, operator, target, detail) {
+  db.logs.unshift({
+    id: `log-${Date.now()}`,
+    type,
+    operator,
+    target,
+    detail,
+    createdAt: now()
+  });
+  db.logs = db.logs.slice(0, 300);
+}
+
+function contractStats(db) {
+  const totalAmount = db.contracts.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const approvalPending = db.contracts.filter((item) => item.status === '审批中').length;
+  const activeContracts = db.contracts.filter((item) => item.status === '已生效').length;
+  const expiringSoon = db.reminders.filter((item) => item.title.includes('到期')).length;
+  const receivable = db.payments
+    .filter((item) => item.type === '应收' && item.status !== '已收')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  return { totalAmount, approvalPending, activeContracts, expiringSoon, receivable };
+}
+
+function makeId(prefix) {
+  return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+const server = http.createServer(async (req, res) => {
+  if (req.method === 'OPTIONS') {
+    return sendJson(res, 200, 'ok', {});
+  }
+
+  const url = new URL(req.url, `http://${req.headers.host}`);
+  const db = loadDb();
+
+  if (url.pathname === '/api/auth/login' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const user = db.users.find(
+        (item) => item.username === body.username && item.passwordHash === hashPassword(body.password || '')
+      );
+      if (!user) {
+        return sendJson(res, 401, '用户名或密码错误', null, 401);
+      }
+      const token = crypto.randomBytes(16).toString('hex');
+      db.sessions[token] = { userId: user.id, createdAt: now() };
+      addLog(db, '登录', user.username, '系统', '用户登录系统');
+      saveDb(db);
+      return sendJson(res, 200, '登录成功', {
+        token,
+        user: {
+          id: user.id,
+          username: user.username,
+          name: user.name,
+          role: user.role,
+          dept: user.dept,
+          scope: user.scope
+        }
+      });
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  const session = getSession(req, db);
+  if (url.pathname.startsWith('/api/') && url.pathname !== '/api/auth/login' && !session) {
+    return sendJson(res, 401, '未登录或会话已失效', null, 401);
+  }
+
+  if (url.pathname === '/api/auth/me' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', { user: session.user });
+  }
+
+  if (url.pathname === '/api/dashboard' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', {
+      stats: contractStats(db),
+      latestContracts: db.contracts.slice(0, 5),
+      todoApprovals: db.approvals.filter((item) => item.status === '待处理').slice(0, 5),
+      reminders: db.reminders.slice(0, 5)
+    });
+  }
+
+  if (url.pathname === '/api/contracts' && req.method === 'GET') {
+    const keyword = (url.searchParams.get('keyword') || '').trim();
+    const status = url.searchParams.get('status') || '';
+    let rows = [...db.contracts];
+    if (keyword) {
+      rows = rows.filter((item) => `${item.code}${item.name}${item.partnerName}`.includes(keyword));
+    }
+    if (status) {
+      rows = rows.filter((item) => item.status === status);
+    }
+    return sendJson(res, 200, '成功', rows);
+  }
+
+  if (url.pathname === '/api/contracts' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const contract = {
+        id: makeId('ct'),
+        code: body.code || `HT-${new Date().getFullYear()}-${String(db.contracts.length + 1).padStart(4, '0')}`,
+        name: body.name,
+        type: body.type || '销售',
+        amount: Number(body.amount || 0),
+        taxRate: Number(body.taxRate || 6),
+        status: body.status || '草稿',
+        partnerId: body.partnerId || '',
+        partnerName: body.partnerName || '',
+        ownerDept: body.ownerDept || session.user.dept,
+        ownerName: body.ownerName || session.user.name,
+        signDate: body.signDate || '',
+        effectiveDate: body.effectiveDate || '',
+        expireDate: body.expireDate || '',
+        approvalStage: body.approvalStage || '待提交',
+        riskLevel: body.riskLevel || '正常',
+        performanceStatus: body.performanceStatus || '未开始',
+        paymentStatus: body.paymentStatus || '待维护',
+        archiveStatus: body.archiveStatus || '未归档',
+        summary: body.summary || '',
+        files: body.files || [],
+        createdAt: now(),
+        updatedAt: now()
+      };
+      db.contracts.unshift(contract);
+      addLog(db, '新增合同', session.user.username, contract.code, `创建合同 ${contract.name}`);
+      saveDb(db);
+      return sendJson(res, 200, '创建成功', contract);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname.startsWith('/api/contracts/') && req.method === 'PUT') {
+    try {
+      const id = url.pathname.split('/').pop();
+      const body = await parseBody(req);
+      const contract = db.contracts.find((item) => item.id === id);
+      if (!contract) return sendJson(res, 404, '合同不存在', null, 404);
+      Object.assign(contract, body, { updatedAt: now() });
+      addLog(db, '更新合同', session.user.username, contract.code, `更新合同 ${contract.name}`);
+      saveDb(db);
+      return sendJson(res, 200, '更新成功', contract);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/partners' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.partners);
+  }
+
+  if (url.pathname === '/api/templates' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.templates);
+  }
+
+  if (url.pathname === '/api/approvals' && req.method === 'GET') {
+    const rows = db.approvals.map((item) => ({
+      ...item,
+      contract: db.contracts.find((contract) => contract.id === item.contractId) || null
+    }));
+    return sendJson(res, 200, '成功', rows);
+  }
+
+  if (url.pathname === '/api/approvals/action' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const approval = db.approvals.find((item) => item.id === body.id);
+      if (!approval) return sendJson(res, 404, '审批记录不存在', null, 404);
+      approval.status = body.status;
+      approval.comment = body.comment || '';
+      approval.handledAt = now();
+      const contract = db.contracts.find((item) => item.id === approval.contractId);
+      if (contract) {
+        if (body.status === '通过') {
+          const nextPending = db.approvals.find(
+            (item) => item.contractId === contract.id && item.status === '待处理' && item.id !== approval.id
+          );
+          contract.approvalStage = nextPending ? nextPending.nodeName : '已完成';
+          contract.status = nextPending ? '审批中' : '已生效';
+        } else if (body.status === '驳回') {
+          contract.status = '已驳回';
+          contract.approvalStage = approval.nodeName;
+        }
+        contract.updatedAt = now();
+      }
+      addLog(db, '审批处理', session.user.username, contract?.code || approval.id, `审批${body.status}`);
+      saveDb(db);
+      return sendJson(res, 200, '处理成功', approval);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/payments' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.payments);
+  }
+
+  if (url.pathname === '/api/reminders' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.reminders);
+  }
+
+  if (url.pathname === '/api/archive' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.archive);
+  }
+
+  if (url.pathname === '/api/logs' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.logs);
+  }
+
+  if (url.pathname === '/api/meta' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', {
+      roles: ['超级管理员', '系统管理员', '业务经办人', '部门负责人', '法务', '财务', '管理层', '审批人'],
+      contractStatus: ['草稿', '待提交', '审批中', '已生效', '已驳回', '已作废', '已完结'],
+      contractTypes: ['销售', '采购', '服务', '劳务', '租赁'],
+      riskLevels: ['正常', '预警', '纠纷', '诉讼']
+    });
+  }
+
+  const staticPath = url.pathname === '/' ? path.join(publicDir, 'index.html') : path.join(publicDir, url.pathname);
+  if (staticPath.startsWith(publicDir) && fs.existsSync(staticPath) && fs.statSync(staticPath).isFile()) {
+    return sendFile(res, staticPath);
+  }
+  return sendFile(res, path.join(publicDir, 'index.html'));
+});
+
+server.listen(port, () => {
+  console.log(`Contract Management System running at http://127.0.0.1:${port}`);
+});
