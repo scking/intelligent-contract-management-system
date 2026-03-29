@@ -14,7 +14,8 @@ const state = {
   logs: [],
   modalOpen: false,
   editingContract: null,
-  filters: { keyword: '', status: '' }
+  filters: { keyword: '', status: '' },
+  pendingFiles: []
 };
 
 function formatMoney(value) {
@@ -26,6 +27,29 @@ function statusTag(status) {
   if (['已驳回', '诉讼', '纠纷'].includes(status)) return 'red';
   if (['已生效', '已付', '已收', '通过', '已归档', '已完成'].includes(status)) return 'green';
   return 'teal';
+}
+
+function fileSize(size) {
+  if (!size) return '0 KB';
+  if (size < 1024) return `${size} B`;
+  if (size < 1024 * 1024) return `${(size / 1024).toFixed(1)} KB`;
+  return `${(size / 1024 / 1024).toFixed(2)} MB`;
+}
+
+function toDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function downloadAttachment(file) {
+  const link = document.createElement('a');
+  link.href = file.content || '#';
+  link.download = file.name || 'attachment';
+  link.click();
 }
 
 async function api(path, options = {}) {
@@ -50,6 +74,7 @@ function logout() {
   localStorage.removeItem('cms-user');
   state.token = '';
   state.user = null;
+  state.pendingFiles = [];
   render();
 }
 
@@ -92,12 +117,14 @@ async function handleLogin(event) {
 function openModal(contract = null) {
   state.modalOpen = true;
   state.editingContract = contract;
+  state.pendingFiles = Array.isArray(contract?.files) ? [...contract.files] : [];
   render();
 }
 
 function closeModal() {
   state.modalOpen = false;
   state.editingContract = null;
+  state.pendingFiles = [];
   render();
 }
 
@@ -105,6 +132,8 @@ async function submitContractForm(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
   const payload = Object.fromEntries(form.entries());
+  payload.files = state.pendingFiles;
+  payload.approvalStage = payload.status === '审批中' ? '部门审批' : (state.editingContract?.approvalStage || '待提交');
   const method = state.editingContract ? 'PUT' : 'POST';
   const url = state.editingContract ? `/api/contracts/${state.editingContract.id}` : '/api/contracts';
   await api(url, { method, body: JSON.stringify(payload) });
@@ -120,6 +149,27 @@ async function handleApproval(id, status) {
     body: JSON.stringify({ id, status, comment })
   });
   await loadPageData();
+  render();
+}
+
+async function handleFileSelect(event) {
+  const files = [...event.target.files || []];
+  if (!files.length) return;
+  const list = await Promise.all(files.map(async (file) => ({
+    id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    name: file.name,
+    size: file.size,
+    mimeType: file.type || 'application/octet-stream',
+    type: '附件',
+    uploadedAt: new Date().toISOString(),
+    content: await toDataUrl(file)
+  })));
+  state.pendingFiles = [...state.pendingFiles, ...list];
+  render();
+}
+
+function removePendingFile(id) {
+  state.pendingFiles = state.pendingFiles.filter((file) => file.id !== id);
   render();
 }
 
@@ -170,6 +220,12 @@ function loginView() {
 
 function dashboardView() {
   const stats = state.dashboard?.stats || { totalAmount: 0, approvalPending: 0, activeContracts: 0, expiringSoon: 0, receivable: 0 };
+  const byStatus = [
+    { label: '审批中', value: stats.approvalPending },
+    { label: '生效中', value: stats.activeContracts },
+    { label: '到期预警', value: stats.expiringSoon }
+  ];
+  const max = Math.max(...byStatus.map(item => item.value), 1);
   return `
     <div class="page-grid fade-in">
       <div class="stat-grid">
@@ -192,6 +248,21 @@ function dashboardView() {
           </div>
         </section>
         <section class="panel">
+          <h3>审批与风险趋势</h3>
+          <div class="mini-chart">
+            ${byStatus.map(item => `
+              <div class="chart-row">
+                <span>${item.label}</span>
+                <div class="chart-bar"><i style="width:${(item.value / max) * 100}%"></i></div>
+                <strong>${item.value}</strong>
+              </div>
+            `).join('')}
+          </div>
+          <div class="footer-tip" style="margin-top:16px;">第 1 步优化已开始：补附件上传、合同详情、流程配置展示、驾驶舱可视化。后面再切 Vue3 + SpringBoot 正式栈。</div>
+        </section>
+      </div>
+      <div class="columns-2">
+        <section class="panel">
           <h3>待办审批</h3>
           <div class="columns-3">
             ${(state.dashboard?.todoApprovals || []).map(item => `
@@ -202,7 +273,12 @@ function dashboardView() {
               </div>
             `).join('') || '<div class="muted">暂无待办审批。</div>'}
           </div>
-          <div class="footer-tip" style="margin-top:16px;">建议下一步接入电子签章回调、钉钉/企微待办同步和 MinIO 附件上传。</div>
+        </section>
+        <section class="panel">
+          <h3>标准审批主线</h3>
+          <div class="timeline">
+            ${['起草合同', '部门审批', '法务审核', '财务审核', '领导终审', '电子签章', '履约执行', '归档审计'].map((step, index) => `<div class="timeline-item"><em>${index + 1}</em><span>${step}</span></div>`).join('')}
+          </div>
         </section>
       </div>
     </div>
@@ -226,17 +302,17 @@ function contractsView() {
       </div>
       <div class="table-wrap">
         <table class="table">
-          <thead><tr><th>编号</th><th>合同名称</th><th>类型</th><th>相对方</th><th>金额</th><th>流程节点</th><th>履约</th><th>状态</th><th>操作</th></tr></thead>
+          <thead><tr><th>编号</th><th>合同名称</th><th>类型</th><th>相对方</th><th>金额</th><th>流程节点</th><th>附件</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             ${state.contracts.map(item => `
               <tr>
                 <td>${item.code}</td>
-                <td>${item.name}</td>
+                <td>${item.name}<br/><span class="muted">${item.summary || '-'}</span></td>
                 <td>${item.type}</td>
                 <td>${item.partnerName}</td>
                 <td>${formatMoney(item.amount)}</td>
                 <td>${item.approvalStage}</td>
-                <td>${item.performanceStatus}</td>
+                <td>${item.files?.length || 0}</td>
                 <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
                 <td><button class="secondary" data-action="edit-contract" data-id="${item.id}">编辑</button></td>
               </tr>
@@ -284,6 +360,24 @@ function simpleTableView(title, rows, columns) {
     </section>`;
 }
 
+function attachmentList(files, editable) {
+  if (!files?.length) {
+    return '<div class="muted">暂未上传附件。</div>';
+  }
+  return `<div class="file-list">${files.map(file => `
+    <div class="file-item">
+      <div>
+        <strong>${file.name}</strong>
+        <div class="muted">${fileSize(file.size)} · ${file.type || '附件'}</div>
+      </div>
+      <div class="toolbar compact">
+        ${file.content ? `<button type="button" class="ghost" data-action="download-file" data-id="${file.id}">下载</button>` : ''}
+        ${editable ? `<button type="button" class="danger" data-action="remove-file" data-id="${file.id}">移除</button>` : ''}
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
 function contractModal() {
   if (!state.modalOpen) return '';
   const item = state.editingContract || {};
@@ -305,6 +399,14 @@ function contractModal() {
             <div><label>经办人</label><input name="ownerName" value="${item.ownerName || state.user?.name || ''}" /></div>
           </div>
           <div><label>合同概要</label><textarea name="summary">${item.summary || ''}</textarea></div>
+          <div>
+            <label>合同附件</label>
+            <div class="upload-box">
+              <input id="contract-files" type="file" multiple />
+              <span class="muted">支持一次添加多个附件，演示版会保存到本地 JSON 数据，可直接下载回看。</span>
+            </div>
+            ${attachmentList(state.pendingFiles, true)}
+          </div>
           <div class="form-actions"><button class="primary" type="submit">保存合同</button><button class="secondary" type="button" data-action="close-modal">取消</button></div>
         </form>
       </div>
@@ -384,6 +486,7 @@ function bindEvents() {
   document.querySelectorAll('[data-action="open-create"]').forEach(btn => btn.addEventListener('click', () => openModal()));
   document.querySelectorAll('[data-action="close-modal"]').forEach(btn => btn.addEventListener('click', closeModal));
   document.querySelector('#contract-form')?.addEventListener('submit', submitContractForm);
+  document.querySelector('#contract-files')?.addEventListener('change', handleFileSelect);
   document.querySelectorAll('[data-action="edit-contract"]').forEach(btn => btn.addEventListener('click', () => {
     const item = state.contracts.find(contract => contract.id === btn.dataset.id);
     openModal(item);
@@ -395,6 +498,11 @@ function bindEvents() {
     state.filters.status = document.querySelector('#status-filter')?.value || '';
     await loadPageData();
     render();
+  }));
+  document.querySelectorAll('[data-action="remove-file"]').forEach(btn => btn.addEventListener('click', () => removePendingFile(btn.dataset.id)));
+  document.querySelectorAll('[data-action="download-file"]').forEach(btn => btn.addEventListener('click', () => {
+    const file = state.pendingFiles.find(item => item.id === btn.dataset.id);
+    if (file) downloadAttachment(file);
   }));
 }
 

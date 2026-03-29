@@ -96,6 +96,66 @@
   ],
   "contracts": [
     {
+      "id": "ct-mnbnbs521c4r",
+      "code": "HT-2026-0004",
+      "name": "附件上传测试合同",
+      "type": "销售",
+      "amount": 12345,
+      "taxRate": 6,
+      "status": "草稿",
+      "partnerId": "",
+      "partnerName": "测试公司",
+      "ownerDept": "总经办",
+      "ownerName": "系统管理员",
+      "signDate": "",
+      "effectiveDate": "",
+      "expireDate": "",
+      "approvalStage": "待提交",
+      "riskLevel": "正常",
+      "performanceStatus": "未开始",
+      "paymentStatus": "待维护",
+      "archiveStatus": "未归档",
+      "summary": "",
+      "files": [
+        {
+          "id": "f-test",
+          "name": "test.pdf",
+          "size": 1234,
+          "mimeType": "application/pdf",
+          "type": "附件",
+          "uploadedAt": "2026-03-29T10:55:00.000Z",
+          "content": "data:application/pdf;base64,VEVTVA=="
+        }
+      ],
+      "createdAt": "2026-03-29T10:58:32.630Z",
+      "updatedAt": "2026-03-29T10:58:32.630Z"
+    },
+    {
+      "id": "ct-mnbn4ch66qy6",
+      "code": "HT-2026-0003",
+      "name": "123test",
+      "type": "劳务",
+      "amount": 80000,
+      "taxRate": 6,
+      "status": "草稿",
+      "partnerId": "",
+      "partnerName": "123",
+      "ownerDept": "总经办",
+      "ownerName": "系统管理员",
+      "signDate": "",
+      "effectiveDate": "",
+      "expireDate": "",
+      "approvalStage": "待提交",
+      "riskLevel": "正常",
+      "performanceStatus": "未开始",
+      "paymentStatus": "待维护",
+      "archiveStatus": "未归档",
+      "summary": "",
+      "files": [],
+      "createdAt": "2026-03-29T10:52:45.743Z",
+      "updatedAt": "2026-03-29T10:52:45.743Z"
+    },
+    {
       "id": "ct-001",
       "code": "HT-2026-0001",
       "name": "云平台年度服务合同",
@@ -251,6 +311,30 @@
   ],
   "logs": [
     {
+      "id": "log-1774781912630",
+      "type": "新增合同",
+      "operator": "admin",
+      "target": "HT-2026-0004",
+      "detail": "创建合同 附件上传测试合同",
+      "createdAt": "2026-03-29T10:58:32.630Z"
+    },
+    {
+      "id": "log-1774781912444",
+      "type": "登录",
+      "operator": "admin",
+      "target": "系统",
+      "detail": "用户登录系统",
+      "createdAt": "2026-03-29T10:58:32.444Z"
+    },
+    {
+      "id": "log-1774781565743",
+      "type": "新增合同",
+      "operator": "admin",
+      "target": "HT-2026-0003",
+      "detail": "创建合同 123test",
+      "createdAt": "2026-03-29T10:52:45.743Z"
+    },
+    {
       "id": "log-1774781427842",
       "type": "登录",
       "operator": "admin",
@@ -283,6 +367,10 @@
     "4c00c85a4e8219ee3623d4aa06c2cc6a": {
       "userId": "u-admin",
       "createdAt": "2026-03-29T10:50:27.842Z"
+    },
+    "585176746e7b26c82b49f4fce7a03aab": {
+      "userId": "u-admin",
+      "createdAt": "2026-03-29T10:58:32.443Z"
     }
   }
 }
