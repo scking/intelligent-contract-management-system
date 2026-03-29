@@ -410,7 +410,7 @@ function dashboardView() {
       </div>
       <div class="columns-2">
         <section class="panel">
-          <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-import-word">解析合同</button><button class="secondary" data-action="open-import-ocr">OCR 识别</button><button class="secondary" data-action="open-create">新建合同</button></div></div>
+          <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-create">新建合同</button></div></div>
           <div class="table-wrap"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
           ${(state.dashboard?.latestContracts || []).map((item) => `
             <tr>
@@ -470,8 +470,6 @@ function contractsView() {
           </select>
           <button class="ghost" data-action="filter-contracts">筛选</button>
           <button class="secondary" data-action="open-import-excel">导入 Excel/CSV</button>
-          <button class="secondary" data-action="open-import-word">解析 Word/PDF/TXT</button>
-          <button class="secondary" data-action="open-import-ocr">OCR 识别</button>
           <button class="primary" data-action="open-create">新建合同</button>
         </div>
       </div>
@@ -753,7 +751,7 @@ function renderApp() {
   return `
     <div class="app-shell">
       <aside class="sidebar">
-        <div class="brand"><small>企业合同管理平台</small><h2 style="margin:8px 0 0;">CMS Enterprise</h2></div>
+        <div class="brand"><small>智能科技分公司合同管理系统</small><h2 style="margin:8px 0 0;">智能科技分公司合同管理系统</h2></div>
         <div class="nav-group">
           ${[['dashboard', '驾驶舱'], ['contracts', '合同台账'], ['approvals', '审批中心'], ['partners', '合作方'], ['templates', '模板中心'], ['payments', '收付款'], ['reminders', '提醒预警'], ['archive', '归档借阅'], ['logs', '审计日志']].map(([key, label]) => `<button class="nav-item ${state.page === key ? 'active' : ''}" data-nav="${key}">${label}</button>`).join('')}
         </div>
