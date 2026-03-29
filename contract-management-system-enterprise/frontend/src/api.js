@@ -3,6 +3,16 @@ import { request } from './http.js';
 const mockDelay = (data, ms = 120) => new Promise((resolve) => setTimeout(() => resolve(data), ms));
 const USE_MOCK = true;
 
+async function withFallback(path, mockFactory) {
+  if (USE_MOCK) return mockFactory();
+  try {
+    return await request(path);
+  } catch (error) {
+    console.warn(`API fallback to mock for ${path}:`, error.message);
+    return mockFactory();
+  }
+}
+
 const contracts = [
   {
     code: 'HT-2026-0001',
@@ -56,27 +66,23 @@ const importPreview = [
 ];
 
 export async function fetchContracts() {
-  if (!USE_MOCK) return request('/api/contracts');
-  return mockDelay(contracts.map(({ paymentPlans, milestones, approvals, summary, ...rest }) => rest));
+  return withFallback('/api/contracts', () => mockDelay(contracts.map(({ paymentPlans, milestones, approvals, summary, ...rest }) => rest)));
 }
 
 export async function fetchContractDetail(code) {
-  if (!USE_MOCK) return request(`/api/contracts/${code}`);
-  return mockDelay(contracts.find((item) => item.code === code) || contracts[0]);
+  return withFallback(`/api/contracts/${code}`, () => mockDelay(contracts.find((item) => item.code === code) || contracts[0]));
 }
 
 export async function fetchImportPreview() {
-  if (!USE_MOCK) return request('/api/imports/preview');
-  return mockDelay(importPreview);
+  return withFallback('/api/imports/preview', () => mockDelay(importPreview));
 }
 
 export async function fetchImportCapabilities() {
-  if (!USE_MOCK) return request('/api/imports/capabilities');
-  return mockDelay({
+  return withFallback('/api/imports/capabilities', () => mockDelay({
     excel: true,
     docx: true,
     pdf: true,
     ocrImage: false,
     note: '图片 OCR 需要在部署机安装 OCR 引擎或接入专门识别服务。'
-  });
+  }));
 }
