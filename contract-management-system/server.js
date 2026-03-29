@@ -439,7 +439,8 @@ function parseBody(req) {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 8 * 1024 * 1024) {
+      // Base64 uploads are larger than the original file size, so keep the JSON limit generous.
+      if (body.length > 40 * 1024 * 1024) {
         reject(new Error('Payload too large'));
       }
     });

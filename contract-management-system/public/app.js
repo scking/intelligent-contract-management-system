@@ -22,7 +22,11 @@ const state = {
   pendingMilestones: [],
   importOpen: false,
   importMode: 'excel',
-  importResult: null
+  importResult: null,
+  saving: false,
+  uploadProgress: 0,
+  importProgress: 0,
+  toast: null
 };
 
 function formatMoney(value) {
@@ -59,12 +63,25 @@ function downloadAttachment(file) {
   link.click();
 }
 
-async function fileToPayload(file) {
+async function fileToPayload(file, onProgress) {
+  if (onProgress) onProgress(10);
+  const content = await toDataUrl(file);
+  if (onProgress) onProgress(100);
   return {
     name: file.name,
     size: file.size,
-    content: await toDataUrl(file)
+    content
   };
+}
+
+function setToast(message, type = 'success') {
+  state.toast = { message, type };
+  render();
+  clearTimeout(setToast.timer);
+  setToast.timer = setTimeout(() => {
+    state.toast = null;
+    render();
+  }, 2600);
 }
 
 async function api(path, options = {}) {
@@ -142,6 +159,9 @@ function openModal(contract = null) {
   state.pendingFiles = Array.isArray(contract?.files) ? [...contract.files] : [];
   state.pendingPaymentPlan = Array.isArray(contract?.paymentPlan) ? [...contract.paymentPlan] : [];
   state.pendingMilestones = Array.isArray(contract?.milestones) ? [...contract.milestones] : [];
+  state.importResult = null;
+  state.importProgress = 0;
+  state.uploadProgress = 0;
   render();
 }
 
@@ -151,6 +171,10 @@ function closeModal() {
   state.pendingFiles = [];
   state.pendingPaymentPlan = [];
   state.pendingMilestones = [];
+  state.importResult = null;
+  state.uploadProgress = 0;
+  state.importProgress = 0;
+  state.saving = false;
   render();
 }
 
@@ -188,9 +212,20 @@ async function submitContractForm(event) {
   payload.milestones = state.pendingMilestones;
   const method = state.editingContract ? 'PUT' : 'POST';
   const url = state.editingContract ? `/api/contracts/${state.editingContract.id}` : '/api/contracts';
-  await api(url, { method, body: JSON.stringify(payload) });
-  await loadPageData();
-  closeModal();
+  state.saving = true;
+  state.uploadProgress = 100;
+  render();
+  try {
+    const editing = Boolean(state.editingContract);
+    await api(url, { method, body: JSON.stringify(payload) });
+    await loadPageData();
+    closeModal();
+    setToast(editing ? '合同修改已保存' : '合同已创建并保存');
+  } catch (error) {
+    state.saving = false;
+    setToast(error.message, 'error');
+    render();
+  }
 }
 
 async function handleApproval(id, status) {
@@ -211,17 +246,26 @@ async function handleApproval(id, status) {
 async function handleFileSelect(event) {
   const files = [...event.target.files || []];
   if (!files.length) return;
-  const list = await Promise.all(files.map(async (file) => ({
-    id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-    name: file.name,
-    size: file.size,
-    mimeType: file.type || 'application/octet-stream',
-    type: '附件',
-    uploadedAt: new Date().toISOString(),
-    content: await toDataUrl(file)
-  })));
-  state.pendingFiles = [...state.pendingFiles, ...list];
+  state.uploadProgress = 0;
   render();
+  const list = [];
+  for (let index = 0; index < files.length; index += 1) {
+    const file = files[index];
+    const content = await toDataUrl(file);
+    list.push({
+      id: `f-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: file.name,
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream',
+      type: '附件',
+      uploadedAt: new Date().toISOString(),
+      content
+    });
+    state.uploadProgress = Math.round(((index + 1) / files.length) * 100);
+    render();
+  }
+  state.pendingFiles = [...state.pendingFiles, ...list];
+  setToast(`已加入 ${files.length} 个附件`);
 }
 
 function removePendingFile(id) {
@@ -287,20 +331,29 @@ function applyImportRecord(record) {
   render();
 }
 
-async function submitImport(event) {
+async function submitImport(event, directFile = null) {
   event.preventDefault();
-  const input = document.querySelector('#import-file');
-  const file = input?.files?.[0];
+  const input = document.querySelector('#import-file') || document.querySelector('#inline-import-file');
+  const file = directFile || input?.files?.[0];
   if (!file) return;
-  const payload = { file: await fileToPayload(file) };
-  const endpoint = state.importMode === 'excel'
-    ? '/api/import/excel'
-    : state.importMode === 'ocr'
-      ? '/api/import/ocr'
-      : '/api/import/contract-file';
-  const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
-  state.importResult = result;
+  state.importProgress = 0;
   render();
+  try {
+    const payload = { file: await fileToPayload(file, (progress) => { state.importProgress = progress; render(); }) };
+    const endpoint = state.importMode === 'excel'
+      ? '/api/import/excel'
+      : state.importMode === 'ocr'
+        ? '/api/import/ocr'
+        : '/api/import/contract-file';
+    const result = await api(endpoint, { method: 'POST', body: JSON.stringify(payload) });
+    state.importResult = result;
+    state.importProgress = 100;
+    setToast('解析完成，请确认回填结果');
+    render();
+  } catch (error) {
+    state.importProgress = 0;
+    setToast(error.message, 'error');
+  }
 }
 
 function loginView() {
@@ -526,6 +579,26 @@ function milestoneEditor() {
     </div>`;
 }
 
+function importToolsInsideModal() {
+  const result = state.importResult;
+  return `
+    <div class="sub-panel">
+      <div class="panel-head"><h4>智能导入</h4><div class="toolbar">
+        <button type="button" class="secondary" data-action="open-inline-import" data-mode="contract">解析 Word/PDF/TXT</button>
+        <button type="button" class="secondary" data-action="open-inline-import" data-mode="ocr">OCR 识别</button>
+      </div></div>
+      <div class="upload-box">
+        <input id="inline-import-file" type="file" accept="${state.importMode === 'ocr' ? '.pdf,.png,.jpg,.jpeg,.webp' : '.docx,.pdf,.txt'}" />
+        <span class="muted">${state.importMode === 'ocr' ? '支持 PDF/图片。文本型 PDF 可直接识别；图片 OCR 依赖本机 OCR 能力。' : '支持 Word/PDF/TXT，解析结果会直接回填到当前新建合同。'}</span>
+        ${state.importProgress ? `<div class="progress-line"><i style="width:${state.importProgress}%"></i></div><div class="muted">解析进度 ${state.importProgress}%</div>` : ''}
+      </div>
+      <div class="form-actions">
+        <button type="button" class="ghost" data-action="run-inline-import">开始解析</button>
+      </div>
+      ${result ? `<div class="sub-panel import-result-box"><div class="key-grid"><div><label>合同名称</label><p>${result.record?.name || '-'}</p></div><div><label>相对方</label><p>${result.record?.partnerName || '-'}</p></div><div><label>金额</label><p>${result.record?.amount || '-'}</p></div><div><label>付款节点</label><p>${result.record?.paymentPlan?.length || 0}</p></div></div><div class="form-actions"><button type="button" class="primary" data-action="apply-import-single">回填到当前合同</button></div></div>` : ''}
+    </div>`;
+}
+
 function contractModal() {
   if (!state.modalOpen) return '';
   const item = state.editingContract || {};
@@ -561,15 +634,17 @@ function contractModal() {
           <div><label>备注</label><textarea name="remark">${item.remark || ''}</textarea></div>
           ${paymentPlanEditor()}
           ${milestoneEditor()}
+          ${importToolsInsideModal()}
           <div>
             <label>合同附件</label>
             <div class="upload-box">
               <input id="contract-files" type="file" multiple />
-              <span class="muted">支持一次添加多个附件，演示版会保存到本地 JSON 数据，可直接下载回看。</span>
+              <span class="muted">支持一次添加多个附件。大文件会先显示本地读取进度，再保存到系统。</span>
+              ${state.uploadProgress ? `<div class="progress-line"><i style="width:${state.uploadProgress}%"></i></div><div class="muted">附件读取进度 ${state.uploadProgress}%</div>` : ''}
             </div>
             ${attachmentList(state.pendingFiles, true, 'modal')}
           </div>
-          <div class="form-actions"><button class="primary" type="submit">保存合同</button><button class="secondary" type="button" data-action="close-modal">取消</button></div>
+          <div class="form-actions"><button class="primary" type="submit">${state.saving ? '保存中...' : '保存合同'}</button><button class="secondary" type="button" data-action="close-modal">取消</button></div>
         </form>
       </div>
     </div>`;
@@ -699,8 +774,8 @@ function renderApp() {
         ${pageContent}
       </main>
       ${contractModal()}
-      ${importModal()}
       ${detailDrawer()}
+      ${state.toast ? `<div class="toast toast-${state.toast.type}">${state.toast.message}</div>` : ''}
     </div>`;
 }
 
@@ -710,13 +785,11 @@ function bindEvents() {
   document.querySelectorAll('[data-action="logout"]').forEach((btn) => btn.addEventListener('click', logout));
   document.querySelectorAll('[data-action="open-create"]').forEach((btn) => btn.addEventListener('click', () => openModal()));
   document.querySelectorAll('[data-action="open-import-excel"]').forEach((btn) => btn.addEventListener('click', () => openImport('excel')));
-  document.querySelectorAll('[data-action="open-import-word"]').forEach((btn) => btn.addEventListener('click', () => openImport('contract')));
-  document.querySelectorAll('[data-action="open-import-ocr"]').forEach((btn) => btn.addEventListener('click', () => openImport('ocr')));
+  document.querySelectorAll('[data-action="open-import-word"]').forEach((btn) => btn.addEventListener('click', () => { state.importMode = 'contract'; openModal(); }));
+  document.querySelectorAll('[data-action="open-import-ocr"]').forEach((btn) => btn.addEventListener('click', () => { state.importMode = 'ocr'; openModal(); }));
   document.querySelectorAll('[data-action="close-modal"]').forEach((btn) => btn.addEventListener('click', closeModal));
-  document.querySelectorAll('[data-action="close-import"]').forEach((btn) => btn.addEventListener('click', closeImport));
   document.querySelectorAll('[data-action="close-detail"]').forEach((btn) => btn.addEventListener('click', closeDetail));
   document.querySelector('#contract-form')?.addEventListener('submit', submitContractForm);
-  document.querySelector('#import-form')?.addEventListener('submit', submitImport);
   document.querySelector('#contract-files')?.addEventListener('change', handleFileSelect);
   document.querySelectorAll('[data-action="edit-contract"]').forEach((btn) => btn.addEventListener('click', () => {
     const item = state.contracts.find((contract) => contract.id === btn.dataset.id);
@@ -744,6 +817,15 @@ function bindEvents() {
   document.querySelectorAll('[data-action="remove-milestone"]').forEach((btn) => btn.addEventListener('click', () => removeMilestone(btn.dataset.id)));
   document.querySelectorAll('[data-action="apply-import-record"]').forEach((btn) => btn.addEventListener('click', () => applyImportRecord(state.importResult?.records?.[Number(btn.dataset.index)])));
   document.querySelectorAll('[data-action="apply-import-single"]').forEach((btn) => btn.addEventListener('click', () => applyImportRecord(state.importResult?.record)));
+  document.querySelectorAll('[data-action="open-inline-import"]').forEach((btn) => btn.addEventListener('click', () => { state.importMode = btn.dataset.mode; state.importResult = null; state.importProgress = 0; render(); }));
+  document.querySelectorAll('[data-action="run-inline-import"]').forEach((btn) => btn.addEventListener('click', async () => {
+    const input = document.querySelector('#inline-import-file');
+    const file = input?.files?.[0];
+    if (!file) { setToast('请先选择要解析的文件', 'error'); return; }
+    const fakeEvent = { preventDefault() {} };
+    const tempForm = document.createElement('form');
+    await submitImport(fakeEvent, file);
+  }));
   document.querySelectorAll('[data-plan-id]').forEach((input) => input.addEventListener('input', (event) => updatePaymentPlan(event.target.dataset.planId, event.target.dataset.field, event.target.value)));
   document.querySelectorAll('[data-milestone-id]').forEach((input) => input.addEventListener('input', (event) => updateMilestone(event.target.dataset.milestoneId, event.target.dataset.field, event.target.value)));
 }
