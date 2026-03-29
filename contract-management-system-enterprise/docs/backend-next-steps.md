@@ -6,6 +6,9 @@
 - dto
 - service
 - repository
+- entity
+- mapper 骨架
+- assembler 转换层起点
 - MySQL 目标模型文档
 - 首版建表 SQL
 - 前端 mock / real API 切换入口
