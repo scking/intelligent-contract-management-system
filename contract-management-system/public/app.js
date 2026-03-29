@@ -12,7 +12,14 @@ const state = {
   reminders: [],
   archive: [],
   logs: [],
+  users: [],
+  roles: [],
+  meta: null,
   modalOpen: false,
+  userModalOpen: false,
+  roleModalOpen: false,
+  passwordModalOpen: false,
+  editingUser: null,
   detailOpen: false,
   editingContract: null,
   contractDetail: null,
@@ -118,7 +125,7 @@ function logout() {
 }
 
 async function loadPageData() {
-  const [dashboard, contracts, approvals, partners, templates, payments, reminders, archive, logs] = await Promise.all([
+  const [dashboard, contracts, approvals, partners, templates, payments, reminders, archive, logs, users, roles, meta] = await Promise.all([
     api('/api/dashboard'),
     api(`/api/contracts?keyword=${encodeURIComponent(state.filters.keyword)}&status=${encodeURIComponent(state.filters.status)}`),
     api('/api/approvals'),
@@ -127,9 +134,12 @@ async function loadPageData() {
     api('/api/payments'),
     api('/api/reminders'),
     api('/api/archive'),
-    api('/api/logs')
+    api('/api/logs'),
+    api('/api/users'),
+    api('/api/roles'),
+    api('/api/meta')
   ]);
-  Object.assign(state, { dashboard, contracts, approvals, partners, templates, payments, reminders, archive, logs });
+  Object.assign(state, { dashboard, contracts, approvals, partners, templates, payments, reminders, archive, logs, users, roles, meta });
 }
 
 async function handleLogin(event) {
@@ -147,6 +157,9 @@ async function handleLogin(event) {
     localStorage.setItem('cms-token', data.token);
     localStorage.setItem('cms-user', JSON.stringify(data.user));
     await loadPageData();
+    if (data.user.mustChangePassword) {
+      state.passwordModalOpen = true;
+    }
     render();
   } catch (error) {
     helper.textContent = error.message;
@@ -354,6 +367,166 @@ async function submitImport(event, directFile = null) {
     state.importProgress = 0;
     setToast(error.message, 'error');
   }
+}
+
+
+function openUserModal(user = null) {
+  state.userModalOpen = true;
+  state.editingUser = user;
+  render();
+}
+
+function closeUserModal() {
+  state.userModalOpen = false;
+  state.editingUser = null;
+  render();
+}
+
+function openRoleModal() {
+  state.roleModalOpen = true;
+  render();
+}
+
+function closeRoleModal() {
+  state.roleModalOpen = false;
+  render();
+}
+
+function openPasswordModal() {
+  state.passwordModalOpen = true;
+  render();
+}
+
+function closePasswordModal() {
+  state.passwordModalOpen = false;
+  render();
+}
+
+async function submitUserForm(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const permissions = state.meta.modules.filter((item) => form.getAll('permissions').includes(item));
+  const payload = {
+    username: form.get('username'),
+    name: form.get('name'),
+    role: form.get('role'),
+    dept: form.get('dept'),
+    enabled: form.get('enabled') === 'on',
+    permissions
+  };
+  if (state.editingUser) {
+    await api(`/api/users/${state.editingUser.id}`, { method: 'PUT', body: JSON.stringify(payload) });
+    setToast('用户资料已更新');
+  } else {
+    const data = await api('/api/users', { method: 'POST', body: JSON.stringify(payload) });
+    setToast(`用户已创建，默认密码：${data.defaultPassword}`);
+  }
+  await loadPageData();
+  closeUserModal();
+}
+
+async function resetUserPassword(id) {
+  const data = await api('/api/users/reset-password', { method: 'POST', body: JSON.stringify({ id }) });
+  setToast(`密码已重置为 ${data.defaultPassword}`);
+  await loadPageData();
+}
+
+async function submitRoleForm(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const permissions = state.meta.modules.filter((item) => form.getAll('permissions').includes(item));
+  await api('/api/roles', {
+    method: 'POST',
+    body: JSON.stringify({ name: form.get('name'), scope: form.get('scope'), permissions })
+  });
+  await loadPageData();
+  closeRoleModal();
+  setToast('角色已创建');
+}
+
+async function submitPasswordForm(event) {
+  event.preventDefault();
+  const form = new FormData(event.currentTarget);
+  const newPassword = form.get('newPassword');
+  const confirmPassword = form.get('confirmPassword');
+  if (newPassword !== confirmPassword) {
+    setToast('两次输入的新密码不一致', 'error');
+    return;
+  }
+  await api('/api/auth/change-password', {
+    method: 'POST',
+    body: JSON.stringify({ oldPassword: form.get('oldPassword'), newPassword })
+  });
+  state.user.mustChangePassword = false;
+  localStorage.setItem('cms-user', JSON.stringify(state.user));
+  closePasswordModal();
+  setToast('密码修改成功');
+}
+
+function usersView() {
+  return `
+    <section class="panel fade-in">
+      <div class="panel-head"><h3>用户管理</h3><div class="toolbar"><button class="secondary" data-action="open-role-modal">新建角色</button><button class="primary" data-action="open-user-modal">新建账号</button></div></div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>账号</th><th>姓名</th><th>角色</th><th>部门</th><th>状态</th><th>首次改密</th><th>操作</th></tr></thead><tbody>
+      ${state.users.map((user) => `<tr><td>${user.username}</td><td>${user.name}</td><td>${user.role}</td><td>${user.dept || '-'}</td><td><span class="tag ${user.enabled ? 'green' : 'red'}">${user.enabled ? '启用' : '禁用'}</span></td><td><span class="tag ${user.mustChangePassword ? 'gold' : 'green'}">${user.mustChangePassword ? '待修改' : '已完成'}</span></td><td><button class="secondary" data-action="edit-user" data-id="${user.id}">编辑</button> <button class="ghost" data-action="reset-user-password" data-id="${user.id}">重置密码</button></td></tr>`).join('')}
+      </tbody></table></div>
+    </section>`;
+}
+
+function rolesView() {
+  return `
+    <section class="panel fade-in">
+      <div class="panel-head"><h3>权限角色</h3><div class="toolbar"><button class="primary" data-action="open-role-modal">新建角色</button></div></div>
+      <div class="table-wrap"><table class="table"><thead><tr><th>角色</th><th>数据范围</th><th>模块权限</th></tr></thead><tbody>
+      ${state.roles.map((role) => `<tr><td>${role.name}</td><td>${role.scope}</td><td>${(role.permissions || []).join('、')}</td></tr>`).join('')}
+      </tbody></table></div>
+    </section>`;
+}
+
+function userModal() {
+  if (!state.userModalOpen) return '';
+  const user = state.editingUser || {};
+  return `
+  <div class="modal-mask"><div class="modal fade-in"><div class="panel-head"><h3>${state.editingUser ? '编辑账号' : '新建账号'}</h3><button class="ghost" data-action="close-user-modal">关闭</button></div>
+  <form id="user-form" class="form-grid">
+    <div class="modal-grid three-cols">
+      <div><label>账号</label><input name="username" value="${user.username || ''}" ${state.editingUser ? 'disabled' : ''} required /></div>
+      <div><label>姓名</label><input name="name" value="${user.name || ''}" required /></div>
+      <div><label>部门</label><input name="dept" value="${user.dept || ''}" /></div>
+      <div><label>角色</label><select name="role">${state.roles.map((role) => `<option ${user.role === role.name ? 'selected' : ''}>${role.name}</option>`).join('')}</select></div>
+      <div><label>默认密码规则</label><input value="账号+@123456" disabled /></div>
+      <div><label>账号启用</label><div class="checkbox-line"><input type="checkbox" name="enabled" ${user.enabled === false ? '' : 'checked'} /> 启用</div></div>
+    </div>
+    <div><label>模块权限</label><div class="permission-grid">${(state.meta?.modules || []).map((module) => `<label class="permission-item"><input type="checkbox" name="permissions" value="${module}" ${(user.permissions || []).includes(module) ? 'checked' : ''}/> ${module}</label>`).join('')}</div></div>
+    <div class="form-actions"><button class="primary" type="submit">保存账号</button><button class="secondary" type="button" data-action="close-user-modal">取消</button></div>
+  </form></div></div>`;
+}
+
+function roleModal() {
+  if (!state.roleModalOpen) return '';
+  return `
+  <div class="modal-mask"><div class="modal fade-in"><div class="panel-head"><h3>新建角色</h3><button class="ghost" data-action="close-role-modal">关闭</button></div>
+  <form id="role-form" class="form-grid">
+    <div class="modal-grid">
+      <div><label>角色名称</label><input name="name" required /></div>
+      <div><label>数据范围</label><input name="scope" value="仅本人数据" required /></div>
+    </div>
+    <div><label>模块权限</label><div class="permission-grid">${(state.meta?.modules || []).map((module) => `<label class="permission-item"><input type="checkbox" name="permissions" value="${module}" /> ${module}</label>`).join('')}</div></div>
+    <div class="form-actions"><button class="primary" type="submit">保存角色</button><button class="secondary" type="button" data-action="close-role-modal">取消</button></div>
+  </form></div></div>`;
+}
+
+function passwordModal() {
+  if (!state.passwordModalOpen) return '';
+  return `
+  <div class="modal-mask"><div class="modal fade-in" style="width:min(560px,100%)"><div class="panel-head"><h3>首次登录请修改密码</h3></div>
+  <form id="password-form" class="form-grid">
+    <div><label>原密码</label><input name="oldPassword" type="password" required /></div>
+    <div><label>新密码</label><input name="newPassword" type="password" required /></div>
+    <div><label>确认新密码</label><input name="confirmPassword" type="password" required /></div>
+    <div class="footer-tip">为了账号安全，首次登录必须完成一次密码修改。默认密码规则为：账号+@123456。</div>
+    <div class="form-actions"><button class="primary" type="submit">立即修改密码</button></div>
+  </form></div></div>`;
 }
 
 function loginView() {
@@ -745,33 +918,41 @@ function renderApp() {
       { label: '对象', key: 'target' },
       { label: '详情', key: 'detail' },
       { label: '时间', key: 'createdAt' }
-    ])
+    ]),
+    users: usersView(),
+    roles: rolesView()
   }[state.page];
+
+  const navItems = [['dashboard', '驾驶舱'], ['contracts', '合同台账'], ['approvals', '审批中心'], ['partners', '合作方'], ['templates', '模板中心'], ['payments', '收付款'], ['reminders', '提醒预警'], ['archive', '归档借阅'], ['logs', '审计日志'], ['users', '用户管理'], ['roles', '权限角色']]
+    .filter(([key]) => (state.user?.permissions || []).includes(key) || state.user?.role === '超级管理员');
 
   return `
     <div class="app-shell">
       <aside class="sidebar">
         <div class="brand"><small>智能科技分公司合同管理系统</small><h2 style="margin:8px 0 0;">智能科技分公司合同管理系统</h2></div>
         <div class="nav-group">
-          ${[['dashboard', '驾驶舱'], ['contracts', '合同台账'], ['approvals', '审批中心'], ['partners', '合作方'], ['templates', '模板中心'], ['payments', '收付款'], ['reminders', '提醒预警'], ['archive', '归档借阅'], ['logs', '审计日志']].map(([key, label]) => `<button class="nav-item ${state.page === key ? 'active' : ''}" data-nav="${key}">${label}</button>`).join('')}
+          ${navItems.map(([key, label]) => `<button class="nav-item ${state.page === key ? 'active' : ''}" data-nav="${key}">${label}</button>`).join('')}
         </div>
       </aside>
       <main class="main-pane">
         <div class="topbar">
           <div>
-            <h1>${({ dashboard: '经营驾驶舱', contracts: '合同起草与管理', approvals: '合同审批流程', partners: '合作方档案', templates: '模板与法务管控', payments: '收付款与发票', reminders: '消息提醒与预警', archive: '归档与借阅', logs: '审计与操作留痕' })[state.page]}</h1>
+            <h1>${({ dashboard: '经营驾驶舱', contracts: '合同起草与管理', approvals: '合同审批流程', partners: '合作方档案', templates: '模板与法务管控', payments: '收付款与发票', reminders: '消息提醒与预警', archive: '归档与借阅', logs: '审计与操作留痕', users: '用户管理', roles: '角色权限管理' })[state.page]}</h1>
             <p>当前阶段先把业务闭环和数据结构统一，下一阶段再切换到 Vue3 + SpringBoot + MySQL 的正式生产技术栈。</p>
           </div>
           <div class="user-card">
             <strong>${state.user.name}</strong>
             <div class="muted">${state.user.role} · ${state.user.dept}</div>
             <div class="muted">数据范围：${state.user.scope}</div>
-            <div style="margin-top:10px;"><button class="ghost" data-action="logout">退出登录</button></div>
+            <div style="margin-top:10px;" class="toolbar"><button class="ghost" data-action="open-password-modal">修改密码</button><button class="ghost" data-action="logout">退出登录</button></div>
           </div>
         </div>
         ${pageContent}
       </main>
       ${contractModal()}
+      ${userModal()}
+      ${roleModal()}
+      ${passwordModal()}
       ${detailDrawer()}
       ${state.toast ? `<div class="toast toast-${state.toast.type}">${state.toast.message}</div>` : ''}
     </div>`;
@@ -781,6 +962,13 @@ function bindEvents() {
   document.querySelector('#login-form')?.addEventListener('submit', handleLogin);
   document.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', () => { state.page = btn.dataset.nav; render(); }));
   document.querySelectorAll('[data-action="logout"]').forEach((btn) => btn.addEventListener('click', logout));
+  document.querySelectorAll('[data-action="open-user-modal"]').forEach((btn) => btn.addEventListener('click', () => openUserModal()));
+  document.querySelectorAll('[data-action="edit-user"]').forEach((btn) => btn.addEventListener('click', () => openUserModal(state.users.find((item) => item.id === btn.dataset.id))));
+  document.querySelectorAll('[data-action="reset-user-password"]').forEach((btn) => btn.addEventListener('click', () => resetUserPassword(btn.dataset.id)));
+  document.querySelectorAll('[data-action="open-role-modal"]').forEach((btn) => btn.addEventListener('click', openRoleModal));
+  document.querySelectorAll('[data-action="open-password-modal"]').forEach((btn) => btn.addEventListener('click', openPasswordModal));
+  document.querySelectorAll('[data-action="close-user-modal"]').forEach((btn) => btn.addEventListener('click', closeUserModal));
+  document.querySelectorAll('[data-action="close-role-modal"]').forEach((btn) => btn.addEventListener('click', closeRoleModal));
   document.querySelectorAll('[data-action="open-create"]').forEach((btn) => btn.addEventListener('click', () => openModal()));
   document.querySelectorAll('[data-action="open-import-excel"]').forEach((btn) => btn.addEventListener('click', () => openImport('excel')));
   document.querySelectorAll('[data-action="open-import-word"]').forEach((btn) => btn.addEventListener('click', () => { state.importMode = 'contract'; openModal(); }));
@@ -788,6 +976,9 @@ function bindEvents() {
   document.querySelectorAll('[data-action="close-modal"]').forEach((btn) => btn.addEventListener('click', closeModal));
   document.querySelectorAll('[data-action="close-detail"]').forEach((btn) => btn.addEventListener('click', closeDetail));
   document.querySelector('#contract-form')?.addEventListener('submit', submitContractForm);
+  document.querySelector('#user-form')?.addEventListener('submit', submitUserForm);
+  document.querySelector('#role-form')?.addEventListener('submit', submitRoleForm);
+  document.querySelector('#password-form')?.addEventListener('submit', submitPasswordForm);
   document.querySelector('#contract-files')?.addEventListener('change', handleFileSelect);
   document.querySelectorAll('[data-action="edit-contract"]').forEach((btn) => btn.addEventListener('click', () => {
     const item = state.contracts.find((contract) => contract.id === btn.dataset.id);

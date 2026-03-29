@@ -91,7 +91,10 @@ const seed = {
       name: '系统管理员',
       role: '超级管理员',
       dept: '总经办',
-      scope: '全部数据'
+      scope: '全部数据',
+      enabled: true,
+      mustChangePassword: false,
+      permissions: ['dashboard','contracts','approvals','partners','templates','payments','reminders','archive','logs','users','roles']
     },
     {
       id: 'u-legal',
@@ -100,7 +103,10 @@ const seed = {
       name: '法务专员',
       role: '法务',
       dept: '法务部',
-      scope: '全公司'
+      scope: '全公司',
+      enabled: true,
+      mustChangePassword: false,
+      permissions: ['dashboard','contracts','approvals','templates','archive','logs']
     },
     {
       id: 'u-finance',
@@ -109,7 +115,30 @@ const seed = {
       name: '财务经理',
       role: '财务',
       dept: '财务部',
-      scope: '金额相关'
+      scope: '金额相关',
+      enabled: true,
+      mustChangePassword: false,
+      permissions: ['dashboard','contracts','approvals','payments','logs']
+    }
+  ],
+  roles: [
+    {
+      id: 'r-admin',
+      name: '超级管理员',
+      scope: '全部数据',
+      permissions: ['dashboard','contracts','approvals','partners','templates','payments','reminders','archive','logs','users','roles']
+    },
+    {
+      id: 'r-legal',
+      name: '法务',
+      scope: '全公司',
+      permissions: ['dashboard','contracts','approvals','templates','archive','logs']
+    },
+    {
+      id: 'r-finance',
+      name: '财务',
+      scope: '金额相关',
+      permissions: ['dashboard','contracts','approvals','payments','logs']
     }
   ],
   partners: [
@@ -379,6 +408,17 @@ function ensureDb() {
 
 function migrateDb(db) {
   db.sessions ||= {};
+  db.roles ||= [
+    { id: 'r-admin', name: '超级管理员', scope: '全部数据', permissions: ['dashboard','contracts','approvals','partners','templates','payments','reminders','archive','logs','users','roles'] },
+    { id: 'r-legal', name: '法务', scope: '全公司', permissions: ['dashboard','contracts','approvals','templates','archive','logs'] },
+    { id: 'r-finance', name: '财务', scope: '金额相关', permissions: ['dashboard','contracts','approvals','payments','logs'] }
+  ];
+  db.users = (db.users || []).map((user) => ({
+    enabled: user.enabled !== false,
+    mustChangePassword: Boolean(user.mustChangePassword),
+    permissions: user.permissions || (db.roles.find((role) => role.name === user.role)?.permissions || ['dashboard']),
+    ...user
+  }));
   db.contracts = (db.contracts || []).map((contract, index) => ({
     currency: 'CNY',
     templateName: contract.type === '采购' ? '采购合同标准版' : '销售合同标准版',
@@ -546,6 +586,9 @@ const server = http.createServer(async (req, res) => {
       if (!user) {
         return sendJson(res, 401, '用户名或密码错误', null, 401);
       }
+      if (user.enabled === false) {
+        return sendJson(res, 403, '账号已禁用', null, 403);
+      }
       const token = crypto.randomBytes(16).toString('hex');
       db.sessions[token] = { userId: user.id, createdAt: now() };
       addLog(db, '登录', user.username, '系统', '用户登录系统');
@@ -558,7 +601,10 @@ const server = http.createServer(async (req, res) => {
           name: user.name,
           role: user.role,
           dept: user.dept,
-          scope: user.scope
+          scope: user.scope,
+          permissions: user.permissions || [],
+          mustChangePassword: Boolean(user.mustChangePassword),
+          enabled: user.enabled !== false
         }
       });
     } catch (error) {
@@ -573,6 +619,27 @@ const server = http.createServer(async (req, res) => {
 
   if (url.pathname === '/api/auth/me' && req.method === 'GET') {
     return sendJson(res, 200, '成功', { user: session.user });
+  }
+
+  if (url.pathname === '/api/auth/change-password' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const user = db.users.find((item) => item.id === session.user.id);
+      if (!user) return sendJson(res, 404, '用户不存在', null, 404);
+      if (user.passwordHash !== hashPassword(body.oldPassword || '')) {
+        return sendJson(res, 400, '原密码错误', null, 400);
+      }
+      if (!body.newPassword || String(body.newPassword).length < 8) {
+        return sendJson(res, 400, '新密码至少 8 位', null, 400);
+      }
+      user.passwordHash = hashPassword(body.newPassword);
+      user.mustChangePassword = false;
+      addLog(db, '修改密码', session.user.username, user.username, '用户修改登录密码');
+      saveDb(db);
+      return sendJson(res, 200, '密码修改成功', { mustChangePassword: false });
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
   }
 
   if (url.pathname === '/api/dashboard' && req.method === 'GET') {
@@ -666,6 +733,109 @@ const server = http.createServer(async (req, res) => {
       addLog(db, '更新合同', session.user.username, updated.code, `更新合同 ${updated.name}`);
       saveDb(db);
       return sendJson(res, 200, '更新成功', updated);
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+
+  if (url.pathname === '/api/users' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.users.map((user) => ({
+      id: user.id,
+      username: user.username,
+      name: user.name,
+      role: user.role,
+      dept: user.dept,
+      scope: user.scope,
+      enabled: user.enabled !== false,
+      mustChangePassword: Boolean(user.mustChangePassword),
+      permissions: user.permissions || []
+    })));
+  }
+
+  if (url.pathname === '/api/users' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      if (db.users.some((item) => item.username === body.username)) {
+        return sendJson(res, 400, '账号已存在', null, 400);
+      }
+      const role = db.roles.find((item) => item.name === body.role);
+      const defaultPassword = `${body.username}@123456`;
+      const user = {
+        id: makeId('u'),
+        username: body.username,
+        passwordHash: hashPassword(defaultPassword),
+        name: body.name || body.username,
+        role: body.role || '业务经办人',
+        dept: body.dept || '',
+        scope: role?.scope || body.scope || '仅本人数据',
+        enabled: body.enabled !== false,
+        mustChangePassword: true,
+        permissions: Array.isArray(body.permissions) && body.permissions.length ? body.permissions : (role?.permissions || ['dashboard'])
+      };
+      db.users.unshift(user);
+      addLog(db, '新增用户', session.user.username, user.username, `创建账号，默认密码为 ${defaultPassword}`);
+      saveDb(db);
+      return sendJson(res, 200, '创建成功', { ...user, passwordHash: undefined, defaultPassword });
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname.startsWith('/api/users/') && req.method === 'PUT') {
+    try {
+      const id = url.pathname.split('/').pop();
+      const body = await parseBody(req);
+      const user = db.users.find((item) => item.id === id);
+      if (!user) return sendJson(res, 404, '用户不存在', null, 404);
+      const role = db.roles.find((item) => item.name === (body.role || user.role));
+      user.name = body.name || user.name;
+      user.role = body.role || user.role;
+      user.dept = body.dept || user.dept;
+      user.enabled = body.enabled !== false;
+      user.scope = role?.scope || body.scope || user.scope;
+      user.permissions = Array.isArray(body.permissions) && body.permissions.length ? body.permissions : (role?.permissions || user.permissions || []);
+      addLog(db, '更新用户', session.user.username, user.username, '更新账号资料与权限');
+      saveDb(db);
+      return sendJson(res, 200, '更新成功', { id: user.id });
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/users/reset-password' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const user = db.users.find((item) => item.id === body.id);
+      if (!user) return sendJson(res, 404, '用户不存在', null, 404);
+      const defaultPassword = `${user.username}@123456`;
+      user.passwordHash = hashPassword(defaultPassword);
+      user.mustChangePassword = true;
+      addLog(db, '重置密码', session.user.username, user.username, `重置密码为 ${defaultPassword}`);
+      saveDb(db);
+      return sendJson(res, 200, '重置成功', { defaultPassword, mustChangePassword: true });
+    } catch (error) {
+      return sendJson(res, 500, error.message, null, 500);
+    }
+  }
+
+  if (url.pathname === '/api/roles' && req.method === 'GET') {
+    return sendJson(res, 200, '成功', db.roles);
+  }
+
+  if (url.pathname === '/api/roles' && req.method === 'POST') {
+    try {
+      const body = await parseBody(req);
+      const role = {
+        id: makeId('r'),
+        name: body.name,
+        scope: body.scope || '仅本人数据',
+        permissions: Array.isArray(body.permissions) ? body.permissions : []
+      };
+      db.roles.unshift(role);
+      addLog(db, '新增角色', session.user.username, role.name, '新增角色与模块权限');
+      saveDb(db);
+      return sendJson(res, 200, '创建成功', role);
     } catch (error) {
       return sendJson(res, 500, error.message, null, 500);
     }
@@ -775,7 +945,8 @@ const server = http.createServer(async (req, res) => {
       archiveStatus: ['未归档', '归档中', '已归档', '已借出'],
       performanceStatus: ['未开始', '执行中', '已完成', '异常'],
       signingMethod: ['线下签署', '电子签章', '邮寄签署'],
-      currency: ['CNY', 'USD', 'EUR']
+      currency: ['CNY', 'USD', 'EUR'],
+      modules: ['dashboard','contracts','approvals','partners','templates','payments','reminders','archive','logs','users','roles']
     });
   }
 
