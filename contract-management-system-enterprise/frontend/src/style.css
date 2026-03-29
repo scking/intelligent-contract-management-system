@@ -45,6 +45,7 @@ button.ghost { background: #efe6d7; color: #23323a; }
 .table td span { margin-top: 6px; color: #677780; font-size: 13px; }
 .row-clickable { cursor: pointer; }
 .row-clickable:hover { background: rgba(15, 118, 110, 0.05); }
+.row-active { background: rgba(15, 118, 110, 0.08); }
 .tag { display: inline-flex; padding: 5px 10px; border-radius: 999px; font-style: normal; font-size: 12px; }
 .tag.gold { background: #fff1dd; color: #b45309; }
 .tag.green { background: #e0f6e8; color: #1f7a45; }
