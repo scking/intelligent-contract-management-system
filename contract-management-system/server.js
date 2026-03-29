@@ -21,6 +21,63 @@ function hashPassword(password) {
   return crypto.createHash('sha256').update(password).digest('hex');
 }
 
+function makeId(prefix) {
+  return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+}
+
+function buildCode(sequence, year = new Date().getFullYear()) {
+  return `HT-${year}-${String(sequence).padStart(4, '0')}`;
+}
+
+function buildApprovalFlow(ownerName = '经办人') {
+  return [
+    { nodeName: '部门审批', assignee: '部门负责人', status: '待处理', comment: '' },
+    { nodeName: '法务审核', assignee: '法务专员', status: '待处理', comment: '' },
+    { nodeName: '财务审核', assignee: '财务经理', status: '待处理', comment: '' },
+    { nodeName: '领导终审', assignee: '总经理', status: '待处理', comment: '' },
+    { nodeName: '电子签章', assignee: ownerName, status: '待处理', comment: '' }
+  ];
+}
+
+function buildContract(body, sessionUser, db, current = {}) {
+  const sequence = db.contracts.length + 1;
+  const approvalStage = body.status === '审批中' ? '部门审批' : body.approvalStage || current.approvalStage || '待提交';
+  return {
+    id: current.id || makeId('ct'),
+    code: body.code || current.code || buildCode(sequence),
+    name: body.name || current.name || '',
+    type: body.type || current.type || '销售',
+    amount: Number(body.amount ?? current.amount ?? 0),
+    taxRate: Number(body.taxRate ?? current.taxRate ?? 6),
+    currency: body.currency || current.currency || 'CNY',
+    status: body.status || current.status || '草稿',
+    partnerId: body.partnerId || current.partnerId || '',
+    partnerName: body.partnerName || current.partnerName || '',
+    ownerDept: body.ownerDept || current.ownerDept || sessionUser.dept,
+    ownerName: body.ownerName || current.ownerName || sessionUser.name,
+    signDate: body.signDate || current.signDate || '',
+    effectiveDate: body.effectiveDate || current.effectiveDate || '',
+    expireDate: body.expireDate || current.expireDate || '',
+    templateName: body.templateName || current.templateName || '销售合同标准版',
+    projectName: body.projectName || current.projectName || '',
+    approvalStage,
+    riskLevel: body.riskLevel || current.riskLevel || '正常',
+    performanceStatus: body.performanceStatus || current.performanceStatus || '未开始',
+    paymentStatus: body.paymentStatus || current.paymentStatus || '待维护',
+    archiveStatus: body.archiveStatus || current.archiveStatus || '未归档',
+    counterpartyRole: body.counterpartyRole || current.counterpartyRole || '乙方',
+    signingMethod: body.signingMethod || current.signingMethod || '线下签署',
+    contractCategory: body.contractCategory || current.contractCategory || '标准合同',
+    summary: body.summary || current.summary || '',
+    remark: body.remark || current.remark || '',
+    files: Array.isArray(body.files) ? body.files : current.files || [],
+    paymentPlan: Array.isArray(body.paymentPlan) ? body.paymentPlan : current.paymentPlan || [],
+    milestones: Array.isArray(body.milestones) ? body.milestones : current.milestones || [],
+    createdAt: current.createdAt || now(),
+    updatedAt: now()
+  };
+}
+
 const seed = {
   users: [
     {
@@ -109,6 +166,7 @@ const seed = {
       type: '销售',
       amount: 860000,
       taxRate: 6,
+      currency: 'CNY',
       status: '审批中',
       partnerId: 'p-001',
       partnerName: '杭州云象科技有限公司',
@@ -117,12 +175,26 @@ const seed = {
       signDate: '2026-03-20',
       effectiveDate: '2026-04-01',
       expireDate: '2027-03-31',
+      templateName: '销售合同标准版',
+      projectName: '云平台续费项目',
       approvalStage: '财务审核',
       riskLevel: '正常',
       performanceStatus: '未开始',
       paymentStatus: '待收款',
       archiveStatus: '未归档',
+      counterpartyRole: '乙方',
+      signingMethod: '电子签章',
+      contractCategory: '标准合同',
       summary: '企业云平台 1 年 SaaS 服务及驻场支持。',
+      remark: '重点客户，需关注续签节点。',
+      paymentPlan: [
+        { id: 'plan-001', phase: '首付款', percent: 40, amount: 344000, planDate: '2026-04-10', type: '应收' },
+        { id: 'plan-002', phase: '尾款', percent: 60, amount: 516000, planDate: '2026-10-10', type: '应收' }
+      ],
+      milestones: [
+        { id: 'ms-001', name: '项目启动', owner: '交付经理', dueDate: '2026-04-05', status: '未开始' },
+        { id: 'ms-002', name: '验收完成', owner: '客户项目经理', dueDate: '2026-06-30', status: '未开始' }
+      ],
       files: [
         { id: 'f-001', name: '合同正文.docx', type: '原件', uploadedAt: now() }
       ],
@@ -136,6 +208,7 @@ const seed = {
       type: '采购',
       amount: 320000,
       taxRate: 13,
+      currency: 'CNY',
       status: '已生效',
       partnerId: 'p-002',
       partnerName: '上海启航供应链有限公司',
@@ -144,12 +217,27 @@ const seed = {
       signDate: '2026-02-15',
       effectiveDate: '2026-02-20',
       expireDate: '2026-09-30',
+      templateName: '采购合同标准版',
+      projectName: '仓储升级项目',
       approvalStage: '已完成',
       riskLevel: '预警',
       performanceStatus: '执行中',
       paymentStatus: '部分付款',
       archiveStatus: '已归档',
+      counterpartyRole: '供应商',
+      signingMethod: '线下签署',
+      contractCategory: '采购合同',
       summary: '仓储自动分拣设备采购及安装调试服务。',
+      remark: '设备到货后注意质保期和验收记录。',
+      paymentPlan: [
+        { id: 'plan-003', phase: '预付款', percent: 30, amount: 96000, planDate: '2026-02-25', type: '应付' },
+        { id: 'plan-004', phase: '到货款', percent: 50, amount: 160000, planDate: '2026-04-05', type: '应付' },
+        { id: 'plan-005', phase: '质保金', percent: 20, amount: 64000, planDate: '2026-10-30', type: '应付' }
+      ],
+      milestones: [
+        { id: 'ms-003', name: '设备到货', owner: '仓储主管', dueDate: '2026-03-28', status: '已完成' },
+        { id: 'ms-004', name: '安装验收', owner: '采购经理', dueDate: '2026-04-15', status: '执行中' }
+      ],
       files: [
         { id: 'f-002', name: '签署版.pdf', type: '扫描件', uploadedAt: now() }
       ],
@@ -183,6 +271,26 @@ const seed = {
       contractId: 'ct-001',
       nodeName: '财务审核',
       assignee: '财务经理',
+      status: '待处理',
+      comment: '',
+      createdAt: now(),
+      handledAt: ''
+    },
+    {
+      id: 'ap-004',
+      contractId: 'ct-001',
+      nodeName: '领导终审',
+      assignee: '总经理',
+      status: '待处理',
+      comment: '',
+      createdAt: now(),
+      handledAt: ''
+    },
+    {
+      id: 'ap-005',
+      contractId: 'ct-001',
+      nodeName: '电子签章',
+      assignee: '李川',
       status: '待处理',
       comment: '',
       createdAt: now(),
@@ -265,9 +373,28 @@ function ensureDb() {
   }
 }
 
+function migrateDb(db) {
+  db.sessions ||= {};
+  db.contracts = (db.contracts || []).map((contract, index) => ({
+    currency: 'CNY',
+    templateName: contract.type === '采购' ? '采购合同标准版' : '销售合同标准版',
+    projectName: contract.projectName || '',
+    counterpartyRole: contract.type === '采购' ? '供应商' : '乙方',
+    signingMethod: contract.signingMethod || '线下签署',
+    contractCategory: contract.contractCategory || '标准合同',
+    remark: contract.remark || '',
+    paymentPlan: contract.paymentPlan || [],
+    milestones: contract.milestones || [],
+    code: contract.code || buildCode(index + 1),
+    ...contract
+  }));
+  return db;
+}
+
 function loadDb() {
   ensureDb();
-  return JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+  const db = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
+  return migrateDb(db);
 }
 
 function saveDb(db) {
@@ -308,7 +435,7 @@ function parseBody(req) {
     let body = '';
     req.on('data', (chunk) => {
       body += chunk;
-      if (body.length > 2 * 1024 * 1024) {
+      if (body.length > 8 * 1024 * 1024) {
         reject(new Error('Payload too large'));
       }
     });
@@ -341,22 +468,40 @@ function addLog(db, type, operator, target, detail) {
     detail,
     createdAt: now()
   });
-  db.logs = db.logs.slice(0, 300);
+  db.logs = db.logs.slice(0, 500);
 }
 
 function contractStats(db) {
   const totalAmount = db.contracts.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const approvalPending = db.contracts.filter((item) => item.status === '审批中').length;
   const activeContracts = db.contracts.filter((item) => item.status === '已生效').length;
-  const expiringSoon = db.reminders.filter((item) => item.title.includes('到期')).length;
+  const expiringSoon = db.contracts.filter((item) => item.expireDate && item.expireDate <= '2026-12-31').length;
   const receivable = db.payments
     .filter((item) => item.type === '应收' && item.status !== '已收')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  return { totalAmount, approvalPending, activeContracts, expiringSoon, receivable };
+  const riskContracts = db.contracts.filter((item) => ['预警', '纠纷', '诉讼'].includes(item.riskLevel)).length;
+  return { totalAmount, approvalPending, activeContracts, expiringSoon, receivable, riskContracts };
 }
 
-function makeId(prefix) {
-  return `${prefix}-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+function ensureApprovalChain(db, contract) {
+  const rows = db.approvals.filter((item) => item.contractId === contract.id);
+  if (rows.length) return;
+  for (const node of buildApprovalFlow(contract.ownerName)) {
+    db.approvals.push({
+      id: makeId('ap'),
+      contractId: contract.id,
+      nodeName: node.nodeName,
+      assignee: node.assignee,
+      status: node.nodeName === '部门审批' ? '待处理' : '待处理',
+      comment: node.comment,
+      createdAt: now(),
+      handledAt: ''
+    });
+  }
+}
+
+function nextPendingApproval(db, contractId) {
+  return db.approvals.find((item) => item.contractId === contractId && item.status === '待处理');
 }
 
 const server = http.createServer(async (req, res) => {
@@ -410,7 +555,8 @@ const server = http.createServer(async (req, res) => {
       stats: contractStats(db),
       latestContracts: db.contracts.slice(0, 5),
       todoApprovals: db.approvals.filter((item) => item.status === '待处理').slice(0, 5),
-      reminders: db.reminders.slice(0, 5)
+      reminders: db.reminders.slice(0, 5),
+      riskTop: db.contracts.filter((item) => item.riskLevel !== '正常').slice(0, 5)
     });
   }
 
@@ -419,43 +565,60 @@ const server = http.createServer(async (req, res) => {
     const status = url.searchParams.get('status') || '';
     let rows = [...db.contracts];
     if (keyword) {
-      rows = rows.filter((item) => `${item.code}${item.name}${item.partnerName}`.includes(keyword));
+      rows = rows.filter((item) => `${item.code}${item.name}${item.partnerName}${item.projectName}`.includes(keyword));
     }
     if (status) {
       rows = rows.filter((item) => item.status === status);
     }
+    rows.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
     return sendJson(res, 200, '成功', rows);
+  }
+
+  if (url.pathname.startsWith('/api/contracts/') && req.method === 'GET') {
+    const id = url.pathname.split('/').pop();
+    const contract = db.contracts.find((item) => item.id === id);
+    if (!contract) return sendJson(res, 404, '合同不存在', null, 404);
+    return sendJson(res, 200, '成功', {
+      ...contract,
+      approvals: db.approvals.filter((item) => item.contractId === id),
+      payments: db.payments.filter((item) => item.contractId === id),
+      archive: db.archive.find((item) => item.contractId === id) || null,
+      reminders: db.reminders.filter((item) => item.contractId === id)
+    });
   }
 
   if (url.pathname === '/api/contracts' && req.method === 'POST') {
     try {
       const body = await parseBody(req);
-      const contract = {
-        id: makeId('ct'),
-        code: body.code || `HT-${new Date().getFullYear()}-${String(db.contracts.length + 1).padStart(4, '0')}`,
-        name: body.name,
-        type: body.type || '销售',
-        amount: Number(body.amount || 0),
-        taxRate: Number(body.taxRate || 6),
-        status: body.status || '草稿',
-        partnerId: body.partnerId || '',
-        partnerName: body.partnerName || '',
-        ownerDept: body.ownerDept || session.user.dept,
-        ownerName: body.ownerName || session.user.name,
-        signDate: body.signDate || '',
-        effectiveDate: body.effectiveDate || '',
-        expireDate: body.expireDate || '',
-        approvalStage: body.approvalStage || '待提交',
-        riskLevel: body.riskLevel || '正常',
-        performanceStatus: body.performanceStatus || '未开始',
-        paymentStatus: body.paymentStatus || '待维护',
-        archiveStatus: body.archiveStatus || '未归档',
-        summary: body.summary || '',
-        files: body.files || [],
-        createdAt: now(),
-        updatedAt: now()
-      };
+      const contract = buildContract(body, session.user, db);
       db.contracts.unshift(contract);
+      if (contract.status === '审批中') {
+        ensureApprovalChain(db, contract);
+      }
+      for (const plan of contract.paymentPlan) {
+        db.payments.unshift({
+          id: makeId('pay'),
+          contractId: contract.id,
+          contractCode: contract.code,
+          type: plan.type || '应收',
+          phase: plan.phase || '付款节点',
+          amount: Number(plan.amount || 0),
+          planDate: plan.planDate || '',
+          actualDate: '',
+          status: plan.type === '应付' ? '待付' : '待收',
+          remark: '来自合同付款计划自动生成'
+        });
+      }
+      if (contract.expireDate) {
+        db.reminders.unshift({
+          id: makeId('rm'),
+          contractId: contract.id,
+          title: `${contract.code} 到期提醒`,
+          remindDate: contract.expireDate,
+          channel: '站内信',
+          status: '待发送'
+        });
+      }
       addLog(db, '新增合同', session.user.username, contract.code, `创建合同 ${contract.name}`);
       saveDb(db);
       return sendJson(res, 200, '创建成功', contract);
@@ -468,12 +631,16 @@ const server = http.createServer(async (req, res) => {
     try {
       const id = url.pathname.split('/').pop();
       const body = await parseBody(req);
-      const contract = db.contracts.find((item) => item.id === id);
-      if (!contract) return sendJson(res, 404, '合同不存在', null, 404);
-      Object.assign(contract, body, { updatedAt: now() });
-      addLog(db, '更新合同', session.user.username, contract.code, `更新合同 ${contract.name}`);
+      const index = db.contracts.findIndex((item) => item.id === id);
+      if (index === -1) return sendJson(res, 404, '合同不存在', null, 404);
+      const updated = buildContract(body, session.user, db, db.contracts[index]);
+      db.contracts[index] = updated;
+      if (updated.status === '审批中') {
+        ensureApprovalChain(db, updated);
+      }
+      addLog(db, '更新合同', session.user.username, updated.code, `更新合同 ${updated.name}`);
       saveDb(db);
-      return sendJson(res, 200, '更新成功', contract);
+      return sendJson(res, 200, '更新成功', updated);
     } catch (error) {
       return sendJson(res, 500, error.message, null, 500);
     }
@@ -506,14 +673,17 @@ const server = http.createServer(async (req, res) => {
       const contract = db.contracts.find((item) => item.id === approval.contractId);
       if (contract) {
         if (body.status === '通过') {
-          const nextPending = db.approvals.find(
-            (item) => item.contractId === contract.id && item.status === '待处理' && item.id !== approval.id
-          );
-          contract.approvalStage = nextPending ? nextPending.nodeName : '已完成';
-          contract.status = nextPending ? '审批中' : '已生效';
+          const upcoming = nextPendingApproval(db, contract.id);
+          if (upcoming && upcoming.id === approval.id) {
+            upcoming.status = '通过';
+          }
+          const nextOne = nextPendingApproval(db, contract.id);
+          contract.approvalStage = nextOne ? nextOne.nodeName : '已完成';
+          contract.status = nextOne ? '审批中' : '已生效';
         } else if (body.status === '驳回') {
           contract.status = '已驳回';
           contract.approvalStage = approval.nodeName;
+          contract.riskLevel = '预警';
         }
         contract.updatedAt = now();
       }
@@ -546,7 +716,11 @@ const server = http.createServer(async (req, res) => {
       roles: ['超级管理员', '系统管理员', '业务经办人', '部门负责人', '法务', '财务', '管理层', '审批人'],
       contractStatus: ['草稿', '待提交', '审批中', '已生效', '已驳回', '已作废', '已完结'],
       contractTypes: ['销售', '采购', '服务', '劳务', '租赁'],
-      riskLevels: ['正常', '预警', '纠纷', '诉讼']
+      riskLevels: ['正常', '预警', '纠纷', '诉讼'],
+      archiveStatus: ['未归档', '归档中', '已归档', '已借出'],
+      performanceStatus: ['未开始', '执行中', '已完成', '异常'],
+      signingMethod: ['线下签署', '电子签章', '邮寄签署'],
+      currency: ['CNY', 'USD', 'EUR']
     });
   }
 
