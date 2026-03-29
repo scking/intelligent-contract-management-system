@@ -1,0 +1,12 @@
+AGENTS.md
+BOOTSTRAP.md
+HEARTBEAT.md
+IDENTITY.md
+SOUL.md
+TOOLS.md
+USER.md
+memory/
+.openclaw/
+contract-management-system/data/uploads/
+contract-management-system-enterprise/backend/target/
+contract-management-system-enterprise/frontend/node_modules/
