@@ -2,7 +2,7 @@ import http from 'node:http';
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { spawnSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -13,6 +13,14 @@ const uploadDir = path.join(dataDir, 'uploads');
 const dbFile = path.join(dataDir, 'db.json');
 const importScript = path.join(__dirname, 'scripts', 'parse_import.py');
 const port = Number(process.env.PORT || 3060);
+const mysqlEnabled = process.env.MYSQL_ENABLED === 'true';
+const mysqlConfig = {
+  host: process.env.MYSQL_HOST || '127.0.0.1',
+  port: String(process.env.MYSQL_PORT || 3306),
+  user: process.env.MYSQL_USER || 'cms_app',
+  password: process.env.MYSQL_PASSWORD || '',
+  database: process.env.MYSQL_DATABASE || 'cms_prod'
+};
 
 fs.mkdirSync(dataDir, { recursive: true });
 fs.mkdirSync(uploadDir, { recursive: true });
@@ -41,6 +49,25 @@ function buildApprovalFlow(ownerName = '经办人') {
     { nodeName: '领导终审', assignee: '总经理', status: '待处理', comment: '' },
     { nodeName: '电子签章', assignee: ownerName, status: '待处理', comment: '' }
   ];
+}
+
+function contractSummary(contract) {
+  if (!contract) return null;
+  return {
+    id: contract.id,
+    code: contract.code,
+    name: contract.name,
+    type: contract.type,
+    amount: contract.amount,
+    status: contract.status,
+    partnerName: contract.partnerName,
+    ownerDept: contract.ownerDept,
+    projectName: contract.projectName,
+    templateName: contract.templateName,
+    approvalStage: contract.approvalStage,
+    riskLevel: contract.riskLevel,
+    updatedAt: contract.updatedAt
+  };
 }
 
 function buildContract(body, sessionUser, db, current = {}) {
@@ -400,9 +427,73 @@ const seed = {
   sessions: {}
 };
 
+function mysqlArgs(extra = []) {
+  return [
+    '-h', mysqlConfig.host,
+    '-P', mysqlConfig.port,
+    '-u', mysqlConfig.user,
+    `-p${mysqlConfig.password}`,
+    '--default-character-set=utf8mb4',
+    ...extra
+  ];
+}
+
+function mysqlExec(sql, { database } = {}) {
+  return execFileSync('mysql', mysqlArgs(database ? ['-D', database] : []), {
+    input: sql,
+    encoding: 'utf8',
+    stdio: ['pipe', 'pipe', 'pipe']
+  });
+}
+
+function mysqlEscape(value) {
+  return String(value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'");
+}
+
+function ensureMysqlStore() {
+  if (!mysqlEnabled) return;
+  mysqlExec(`CREATE DATABASE IF NOT EXISTS \`${mysqlConfig.database}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;`);
+  mysqlExec(`
+    CREATE TABLE IF NOT EXISTS app_store (
+      store_key VARCHAR(64) NOT NULL PRIMARY KEY,
+      store_value LONGTEXT NOT NULL,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  `, { database: mysqlConfig.database });
+}
+
+function loadDbFromMysql() {
+  if (!mysqlEnabled) return null;
+  ensureMysqlStore();
+  const output = mysqlExec('SELECT store_key, store_value FROM app_store;', { database: mysqlConfig.database }).trim();
+  if (!output) return null;
+  const db = {};
+  for (const line of output.split('\n')) {
+    const tabIndex = line.indexOf('\t');
+    if (tabIndex === -1) continue;
+    const key = line.slice(0, tabIndex);
+    const value = line.slice(tabIndex + 1);
+    db[key] = JSON.parse(value);
+  }
+  return Object.keys(db).length ? db : null;
+}
+
+function saveDbToMysql(db) {
+  if (!mysqlEnabled) return;
+  ensureMysqlStore();
+  const keys = ['users','partners','templates','contracts','approvals','payments','reminders','archive','logs','sessions','roles'];
+  const values = keys.map((key) => `('${key}', '${mysqlEscape(JSON.stringify(db[key] ?? []))}')`).join(',\n');
+  mysqlExec(`REPLACE INTO app_store (store_key, store_value) VALUES\n${values};`, { database: mysqlConfig.database });
+}
+
 function ensureDb() {
   if (!fs.existsSync(dbFile)) {
     fs.writeFileSync(dbFile, JSON.stringify(seed, null, 2), 'utf8');
+  }
+  if (mysqlEnabled) {
+    ensureMysqlStore();
   }
 }
 
@@ -437,12 +528,19 @@ function migrateDb(db) {
 
 function loadDb() {
   ensureDb();
+  const mysqlDb = loadDbFromMysql();
+  if (mysqlDb) {
+    return migrateDb(mysqlDb);
+  }
   const db = JSON.parse(fs.readFileSync(dbFile, 'utf8'));
-  return migrateDb(db);
+  const migrated = migrateDb(db);
+  saveDbToMysql(migrated);
+  return migrated;
 }
 
 function saveDb(db) {
   fs.writeFileSync(dbFile, JSON.stringify(db, null, 2), 'utf8');
+  saveDbToMysql(db);
 }
 
 function sendJson(res, code, msg, data, status = 200) {
@@ -645,16 +743,17 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/api/dashboard' && req.method === 'GET') {
     return sendJson(res, 200, '成功', {
       stats: contractStats(db),
-      latestContracts: db.contracts.slice(0, 5),
+      latestContracts: db.contracts.slice(0, 5).map(contractSummary),
       todoApprovals: db.approvals.filter((item) => item.status === '待处理').slice(0, 5),
       reminders: db.reminders.slice(0, 5),
-      riskTop: db.contracts.filter((item) => item.riskLevel !== '正常').slice(0, 5)
+      riskTop: db.contracts.filter((item) => item.riskLevel !== '正常').slice(0, 5).map(contractSummary)
     });
   }
 
   if (url.pathname === '/api/contracts' && req.method === 'GET') {
     const keyword = (url.searchParams.get('keyword') || '').trim();
     const status = url.searchParams.get('status') || '';
+    const limit = Math.min(Number(url.searchParams.get('limit') || 50) || 50, 200);
     let rows = [...db.contracts];
     if (keyword) {
       rows = rows.filter((item) => `${item.code}${item.name}${item.partnerName}${item.projectName}`.includes(keyword));
@@ -663,7 +762,30 @@ const server = http.createServer(async (req, res) => {
       rows = rows.filter((item) => item.status === status);
     }
     rows.sort((a, b) => String(b.updatedAt).localeCompare(String(a.updatedAt)));
-    return sendJson(res, 200, '成功', rows);
+    const summaryRows = rows.slice(0, limit).map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      type: item.type,
+      amount: item.amount,
+      status: item.status,
+      partnerName: item.partnerName,
+      ownerDept: item.ownerDept,
+      projectName: item.projectName,
+      templateName: item.templateName,
+      approvalStage: item.approvalStage,
+      riskLevel: item.riskLevel,
+      updatedAt: item.updatedAt,
+      files: Array.isArray(item.files) ? item.files.map((file) => ({
+        id: file.id,
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        mimeType: file.mimeType,
+        uploadedAt: file.uploadedAt
+      })) : []
+    }));
+    return sendJson(res, 200, '成功', summaryRows);
   }
 
   if (url.pathname.startsWith('/api/contracts/') && req.method === 'GET') {
@@ -852,7 +974,7 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/api/approvals' && req.method === 'GET') {
     const rows = db.approvals.map((item) => ({
       ...item,
-      contract: db.contracts.find((contract) => contract.id === item.contractId) || null
+      contract: contractSummary(db.contracts.find((contract) => contract.id === item.contractId))
     }));
     return sendJson(res, 200, '成功', rows);
   }
