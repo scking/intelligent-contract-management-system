@@ -534,29 +534,29 @@ function loginView() {
     <div class="login-shell fade-in">
       <div class="login-card">
         <section class="hero-pane">
-          <div class="hero-badge">企业正式版 · 可落地演示</div>
-          <h1>合同全生命周期管理，<br/>从起草到归档一套闭环</h1>
-          <p>覆盖组织权限、合同台账、审批流、履约、收付款、归档借阅、提醒与审计日志。先把核心链路跑通，再逐步接电子签章与企业消息。</p>
+          <div class="hero-badge">线上运行中 · 企业合同平台</div>
+          <h1>企业合同全流程管控，<br/>让审批、履约与归档统一在线</h1>
+          <p>围绕合同起草、审批、履约、收付款、归档与审计留痕建立统一工作台，适合先上线核心流程，再逐步扩展电子签章、消息通知与正式主数据体系。</p>
           <div class="hero-grid">
-            <div class="metric-chip"><strong>14</strong><span>核心业务模块</span></div>
-            <div class="metric-chip"><strong>RBAC</strong><span>权限 + 数据范围</span></div>
-            <div class="metric-chip"><strong>审计留痕</strong><span>日志不可删除</span></div>
-            <div class="metric-chip"><strong>本地可用</strong><span>零依赖启动</span></div>
+            <div class="metric-chip"><strong>14</strong><span>覆盖核心业务模块</span></div>
+            <div class="metric-chip"><strong>RBAC</strong><span>角色权限与数据范围</span></div>
+            <div class="metric-chip"><strong>审计留痕</strong><span>关键操作全程记录</span></div>
+            <div class="metric-chip"><strong>在线可用</strong><span>已部署到服务器运行</span></div>
           </div>
         </section>
         <section class="login-form-pane">
-          <h2>登录系统</h2>
-          <p>演示版已预置管理员、法务、财务账号，方便直接体验审批流。</p>
+          <h2>登录平台</h2>
+          <p>请输入系统账号与密码。首次上线阶段保留预置管理账号，登录后建议立即修改默认密码。</p>
           <form class="form-grid" id="login-form">
             <div><label>账号</label><input name="username" value="admin" required /></div>
-            <div><label>密码</label><input name="password" type="password" value="Admin@123456" required /></div>
-            <div class="form-actions"><button class="primary" type="submit">进入合同管理系统</button><span class="helper" id="login-error">默认管理员账号已填好。</span></div>
+            <div><label>密码</label><input name="password" type="password" placeholder="请输入密码" required /></div>
+            <div class="form-actions"><button class="primary" type="submit">进入合同管理平台</button><span class="helper" id="login-error">请输入账号密码后登录。</span></div>
           </form>
           <div class="demo-box">
-            <strong>演示账号</strong><br/>
-            admin / Admin@123456（超级管理员）<br/>
-            legal / Legal@123456（法务）<br/>
-            finance / Finance@123456（财务）
+            <strong>当前可用账号</strong><br/>
+            管理员：admin / Admin@123456<br/>
+            法务：legal / Legal@123456<br/>
+            财务：finance / Finance@123456
           </div>
         </section>
       </div>
@@ -929,7 +929,7 @@ function renderApp() {
   return `
     <div class="app-shell">
       <aside class="sidebar">
-        <div class="brand"><small>智能科技分公司合同管理系统</small><h2 style="margin:8px 0 0;">智能科技分公司合同管理系统</h2></div>
+        <div class="brand"><small>Enterprise Contract Platform</small><h2 style="margin:8px 0 0;">企业合同管理平台</h2></div>
         <div class="nav-group">
           ${navItems.map(([key, label]) => `<button class="nav-item ${state.page === key ? 'active' : ''}" data-nav="${key}">${label}</button>`).join('')}
         </div>
