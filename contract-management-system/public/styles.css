@@ -522,6 +522,139 @@ input[name="password"]:focus {
 .nav-item.active { background: rgba(215, 241, 236, 0.14); color: #fff; }
 
 .main-pane { flex: 1; padding: 26px; display: grid; gap: 18px; }
+.dashboard-grid-premium {
+  gap: 20px;
+}
+.dashboard-hero {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr;
+  gap: 20px;
+  align-items: stretch;
+}
+.panel-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(94, 234, 212, 0.12), transparent 28%),
+    linear-gradient(135deg, rgba(11, 35, 49, 0.96), rgba(15, 118, 110, 0.9));
+  color: #eff6ff;
+}
+.panel-hero::after {
+  content: '';
+  position: absolute;
+  inset: auto -60px -80px auto;
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.18), rgba(59, 130, 246, 0));
+}
+.hero-kicker {
+  display: inline-flex;
+  margin-bottom: 12px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.12);
+  font-size: 12px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.panel-hero h2 {
+  margin: 0 0 12px;
+  font-size: 40px;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+}
+.panel-hero p {
+  margin: 0;
+  max-width: 640px;
+  color: rgba(239, 246, 255, 0.8);
+  line-height: 1.8;
+}
+.hero-inline-metrics {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+}
+.hero-inline-metrics span {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(239, 246, 255, 0.92);
+}
+.dashboard-hero-side {
+  display: flex;
+  align-items: stretch;
+}
+.hero-health-card {
+  width: 100%;
+  padding: 22px;
+  border-radius: 24px;
+  background: rgba(7, 17, 32, 0.26);
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.hero-health-card strong {
+  display: block;
+  margin-bottom: 12px;
+  font-size: 14px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.hero-health-card div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.hero-health-card small {
+  color: rgba(226, 232, 240, 0.68);
+}
+.stat-grid-premium .stat-card {
+  background: linear-gradient(180deg, rgba(255,255,255,0.82), rgba(255,255,255,0.62));
+  border: 1px solid rgba(255,255,255,0.52);
+}
+.stat-card-accent {
+  background: linear-gradient(180deg, rgba(15, 118, 110, 0.12), rgba(255,255,255,0.84)) !important;
+}
+.stat-card-warning {
+  background: linear-gradient(180deg, rgba(180, 83, 9, 0.12), rgba(255,255,255,0.84)) !important;
+}
+.columns-hero-split {
+  grid-template-columns: 1.1fr .9fr;
+}
+.panel-emphasis {
+  background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.66));
+}
+.panel-dark {
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
+  color: #e2e8f0;
+}
+.panel-dark .muted,
+.panel-dark .panel-head span,
+.panel-dark h3 {
+  color: inherit;
+}
+.table-wrap-soft {
+  border-radius: 20px;
+  background: rgba(255,255,255,0.38);
+}
+.chart-row-premium span,
+.chart-row-premium strong {
+  color: #f8fafc;
+}
+.footer-tip-dark {
+  background: rgba(255,255,255,0.06);
+  color: rgba(226, 232, 240, 0.84);
+}
+.list-card-glow {
+  background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.56));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.38);
+}
 .topbar {
   display: flex; justify-content: space-between; align-items: center; gap: 18px;
   padding: 20px 24px; background: var(--surface); border-radius: 24px; box-shadow: var(--shadow);
@@ -630,7 +763,7 @@ input[name="password"]:focus {
   .stat-grid.six, .detail-grid, .modal-grid.three-cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 1080px) {
-  .login-card, .columns-2, .stat-grid, .stat-grid.six { grid-template-columns: 1fr; }
+  .login-card, .columns-2, .stat-grid, .stat-grid.six, .dashboard-hero, .columns-hero-split { grid-template-columns: 1fr; }
   .login-card { width: min(760px, 100%); }
   .hero-footer { align-items: stretch; }
   .hero-status-card { width: 100%; }
@@ -640,6 +773,8 @@ input[name="password"]:focus {
 }
 @media (max-width: 760px) {
   .main-pane { padding: 16px; }
+  .panel-hero h2 { font-size: 32px; }
+  .hero-inline-metrics { width: 100%; }
   .topbar { flex-direction: column; align-items: stretch; }
   .hero-pane, .login-form-pane, .panel, .stat-card { padding: 22px 18px; }
   .modal-grid, .modal-grid.three-cols, .columns-3, .hero-grid { grid-template-columns: 1fr; }

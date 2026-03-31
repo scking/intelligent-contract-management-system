@@ -639,19 +639,38 @@ function dashboardView() {
   ];
   const max = Math.max(...byStatus.map((item) => item.value), 1);
   return `
-    <div class="page-grid fade-in">
-      <div class="stat-grid six">
-        <div class="stat-card"><span>合同总额</span><strong>${formatMoney(stats.totalAmount)}</strong><small class="muted">已纳入台账合同</small></div>
+    <div class="page-grid fade-in dashboard-grid-premium">
+      <section class="dashboard-hero panel panel-hero">
+        <div>
+          <span class="hero-kicker">Enterprise Command Center</span>
+          <h2>合同执行态势总览</h2>
+          <p>统一查看合同总额、审批积压、到期风险与回款进度，让业务、法务、财务共用一套实时驾驶舱。</p>
+          <div class="hero-inline-metrics">
+            <span>在途审批 ${stats.approvalPending}</span>
+            <span>风险合同 ${stats.riskContracts}</span>
+            <span>到期提醒 ${stats.expiringSoon}</span>
+          </div>
+        </div>
+        <div class="dashboard-hero-side">
+          <div class="hero-health-card">
+            <strong>今日运行状态</strong>
+            <div><span class="status-dot"></span> 数据同步正常 / 审批引擎在线</div>
+            <small>最近一次指标刷新：实时数据快照</small>
+          </div>
+        </div>
+      </section>
+      <div class="stat-grid six stat-grid-premium">
+        <div class="stat-card stat-card-accent"><span>合同总额</span><strong>${formatMoney(stats.totalAmount)}</strong><small class="muted">已纳入台账合同</small></div>
         <div class="stat-card"><span>审批中</span><strong>${stats.approvalPending}</strong><small class="muted">待推进流程</small></div>
         <div class="stat-card"><span>生效合同</span><strong>${stats.activeContracts}</strong><small class="muted">履约执行中</small></div>
         <div class="stat-card"><span>到期提醒</span><strong>${stats.expiringSoon}</strong><small class="muted">年内到期</small></div>
         <div class="stat-card"><span>待回款</span><strong>${formatMoney(stats.receivable)}</strong><small class="muted">应收未收</small></div>
-        <div class="stat-card"><span>风险合同</span><strong>${stats.riskContracts}</strong><small class="muted">预警 / 纠纷 / 诉讼</small></div>
+        <div class="stat-card stat-card-warning"><span>风险合同</span><strong>${stats.riskContracts}</strong><small class="muted">预警 / 纠纷 / 诉讼</small></div>
       </div>
-      <div class="columns-2">
-        <section class="panel">
+      <div class="columns-2 columns-hero-split">
+        <section class="panel panel-emphasis">
           <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-create">新建合同</button></div></div>
-          <div class="table-wrap"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
+          <div class="table-wrap table-wrap-soft"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
           ${(state.dashboard?.latestContracts || []).map((item) => `
             <tr>
               <td>${item.code}</td>
@@ -662,33 +681,33 @@ function dashboardView() {
             </tr>`).join('')}
           </tbody></table></div>
         </section>
-        <section class="panel">
-          <h3>审批与风险趋势</h3>
+        <section class="panel panel-dark">
+          <div class="panel-head"><h3>审批与风险趋势</h3><span class="muted">关键压力位</span></div>
           <div class="mini-chart">
             ${byStatus.map((item) => `
-              <div class="chart-row">
+              <div class="chart-row chart-row-premium">
                 <span>${item.label}</span>
                 <div class="chart-bar"><i style="width:${(item.value / max) * 100}%"></i></div>
                 <strong>${item.value}</strong>
               </div>`).join('')}
           </div>
-          <div class="footer-tip" style="margin-top:16px;">第 1 步优化继续推进中：当前版已经把合同详情、编号规则、付款节点、履约里程碑、流程链路统一到一个模型里。</div>
+          <div class="footer-tip footer-tip-dark" style="margin-top:16px;">当前版已将合同详情、编号规则、付款节点、履约里程碑、流程链路统一到一个模型里。</div>
         </section>
       </div>
-      <div class="columns-2">
-        <section class="panel">
-          <h3>待办审批</h3>
+      <div class="columns-2 columns-hero-split">
+        <section class="panel panel-emphasis">
+          <div class="panel-head"><h3>待办审批</h3><span class="muted">优先处理积压节点</span></div>
           <div class="columns-3">${(state.dashboard?.todoApprovals || []).map((item) => `
-            <div class="list-card">
+            <div class="list-card list-card-glow">
               <strong>${item.nodeName}</strong>
               <div class="muted">处理人：${item.assignee}</div>
               <div class="muted">状态：${item.status}</div>
             </div>`).join('') || '<div class="muted">暂无待办审批。</div>'}</div>
         </section>
-        <section class="panel">
-          <h3>高风险合同</h3>
+        <section class="panel panel-emphasis">
+          <div class="panel-head"><h3>高风险合同</h3><span class="muted">聚焦预警与纠纷</span></div>
           ${(state.dashboard?.riskTop || []).map((item) => `
-            <div class="list-card compact-card">
+            <div class="list-card compact-card list-card-glow">
               <strong>${item.code} · ${item.name}</strong>
               <div class="muted">风险等级：${item.riskLevel} · ${item.approvalStage}</div>
             </div>`).join('') || '<div class="muted">暂无风险合同。</div>'}
