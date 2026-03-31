@@ -744,9 +744,9 @@ function approvalsView() {
 
 function simpleTableView(title, rows, columns) {
   return `
-    <section class="panel fade-in">
-      <div class="panel-head"><h3>${title}</h3></div>
-      <div class="table-wrap"><table class="table"><thead><tr>${columns.map((col) => `<th>${col.label}</th>`).join('')}</tr></thead>
+    <section class="panel fade-in panel-v2 ledger-panel-v2">
+      <div class="panel-head ledger-head-v2"><div><h3>${title}</h3></div></div>
+      <div class="table-wrap table-wrap-soft ledger-table-v2"><table class="table table-ledger-v2"><thead><tr>${columns.map((col) => `<th>${col.label}</th>`).join('')}</tr></thead>
       <tbody>${rows.map((row) => `<tr>${columns.map((col) => `<td>${col.render ? col.render(row) : row[col.key] || '-'}</td>`).join('')}</tr>`).join('')}</tbody>
       </table></div>
     </section>`;
