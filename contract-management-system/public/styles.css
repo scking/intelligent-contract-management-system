@@ -1704,3 +1704,41 @@ button.ghost:hover,
     max-width: none;
   }
 }
+
+
+/* Interaction polish */
+.toolbar-ledger-v2,
+.upload-box,
+.sub-panel,
+.detail-card,
+.file-item {
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+.toolbar-ledger-v2:focus-within,
+.upload-box:focus-within,
+.sub-panel:hover,
+.detail-card:hover,
+.file-item:hover {
+  border-color: rgba(34, 211, 238, 0.22);
+  box-shadow: 0 16px 30px rgba(2, 8, 23, 0.16);
+}
+.table-ledger-v2 tbody tr:hover {
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.06), rgba(34, 211, 238, 0.02));
+}
+.table-ledger-v2 tbody tr:hover .cell-code-v2 {
+  border-color: rgba(34, 211, 238, 0.24);
+  background: rgba(34, 211, 238, 0.12);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: rgba(34, 211, 238, 0.3);
+  box-shadow: 0 0 0 4px rgba(34, 211, 238, 0.08);
+}
+.modal-v2 .panel-head,
+.drawer-v2 .panel-head,
+.ledger-head-v2 {
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.08);
+}
