@@ -547,16 +547,42 @@ function loginView() {
   const inputClass = state.loginFieldError ? 'input-error' : '';
   return `
     <div class="login-shell fade-in">
-      <div class="login-card aurora-card">
+      <div class="login-card aurora-card aurora-card-grid">
+        <div class="login-atmosphere">
+          <span class="orbit orbit-a"></span>
+          <span class="orbit orbit-b"></span>
+          <span class="grid-lines"></span>
+        </div>
         <section class="hero-pane hero-pane-glow">
           <div class="hero-badge">Smart Tech Division · Contract OS</div>
-          <h1>智能科技分公司<br/>合同管理系统</h1>
+          <div class="brand-lockup">
+            <div class="brand-mark" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div>
+              <small>Enterprise Contract Intelligence Platform</small>
+              <h1>智能科技分公司<br/>合同管理系统</h1>
+            </div>
+          </div>
           <p>统一承载合同起草、审批流转、履约跟踪、收付款、归档与审计留痕，让业务、法务、财务在同一套在线系统内协同闭环。</p>
           <div class="hero-grid">
             <div class="metric-chip"><strong>全流程</strong><span>起草到归档统一协同</span></div>
             <div class="metric-chip"><strong>多角色</strong><span>业务、法务、财务联动</span></div>
             <div class="metric-chip"><strong>可追踪</strong><span>节点状态与审计留痕</span></div>
             <div class="metric-chip"><strong>已上线</strong><span>服务器正式运行中</span></div>
+          </div>
+          <div class="hero-footer">
+            <div class="signal-strip">
+              <span>风控感知</span>
+              <span>审批协同</span>
+              <span>归档审计</span>
+            </div>
+            <div class="hero-status-card">
+              <strong>Platform Status</strong>
+              <div><span class="status-dot"></span> Secure access channel online</div>
+            </div>
           </div>
         </section>
         <section class="login-form-pane login-form-pane-premium">
@@ -565,11 +591,23 @@ function loginView() {
             <h2>欢迎登录</h2>
             <p>请输入系统账号与密码，进入智能科技分公司合同管理系统。</p>
           </div>
+          <div class="security-callout">
+            <span class="security-chip">Role-Based Access</span>
+            <span class="security-chip">Audit Trail</span>
+            <span class="security-chip">Encrypted Session</span>
+          </div>
           <form class="form-grid" id="login-form">
-            <div><label>账号</label><input class="${inputClass}" name="username" placeholder="请输入账号" required /></div>
-            <div><label>密码</label><input class="${inputClass}" name="password" type="password" placeholder="请输入密码" required /></div>
-            <div class="form-actions"><button class="primary login-submit" type="submit" ${state.loginPending ? 'disabled' : ''}>${state.loginPending ? '登录中...' : '进入系统'}</button><span class="${helperClass}" id="login-error" role="status" aria-live="polite">${helperText}</span></div>
+            <div class="input-block"><label>账号</label><input class="${inputClass}" name="username" placeholder="请输入账号" required /></div>
+            <div class="input-block"><label>密码</label><input class="${inputClass}" name="password" type="password" placeholder="请输入密码" required /></div>
+            <div class="form-actions">
+              <button class="primary login-submit" type="submit" ${state.loginPending ? 'disabled' : ''}>${state.loginPending ? '登录中...' : '进入系统'}</button>
+              <span class="${helperClass}" id="login-error" role="status" aria-live="polite">${helperText}</span>
+            </div>
           </form>
+          <div class="login-side-note">
+            <strong>Access Policy</strong>
+            <span>首次上线阶段保留统一账号体系，登录后建议立即修改默认密码并按角色使用权限。</span>
+          </div>
         </section>
       </div>
     </div>`;
