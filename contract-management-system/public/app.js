@@ -670,10 +670,13 @@ function dashboardView() {
 
 function contractsView() {
   return `
-    <section class="panel fade-in">
-      <div class="panel-head">
-        <h3>合同台账</h3>
-        <div class="toolbar">
+    <section class="panel fade-in panel-v2 ledger-panel-v2">
+      <div class="panel-head ledger-head-v2">
+        <div>
+          <h3>合同台账</h3>
+          <span class="muted">统一查看合同主体、金额、流程节点、附件与风险状态。</span>
+        </div>
+        <div class="toolbar toolbar-ledger-v2">
           <input id="keyword" placeholder="搜索合同编号 / 名称 / 相对方 / 项目" value="${state.filters.keyword}" />
           <select id="status-filter">
             <option value="">全部状态</option>
@@ -684,22 +687,24 @@ function contractsView() {
           <button class="primary" data-action="open-create">新建合同</button>
         </div>
       </div>
-      <div class="table-wrap">
-        <table class="table">
+      <div class="table-wrap table-wrap-soft ledger-table-v2">
+        <table class="table table-ledger-v2">
           <thead><tr><th>编号</th><th>合同信息</th><th>项目/模板</th><th>金额</th><th>流程节点</th><th>附件</th><th>状态</th><th>操作</th></tr></thead>
           <tbody>
             ${state.contracts.map((item) => `
               <tr>
-                <td>${item.code}</td>
-                <td>${item.name}<br/><span class="muted">${item.partnerName} · ${item.ownerDept}</span></td>
+                <td><span class="cell-code-v2">${item.code}</span></td>
+                <td><strong class="cell-title-v2">${item.name}</strong><br/><span class="muted">${item.partnerName} · ${item.ownerDept}</span></td>
                 <td>${item.projectName || '-'}<br/><span class="muted">${item.templateName || '-'}</span></td>
-                <td>${formatMoney(item.amount)}</td>
+                <td><span class="cell-amount-v2">${formatMoney(item.amount)}</span></td>
                 <td>${item.approvalStage}<br/><span class="muted">风险：${item.riskLevel}</span></td>
-                <td>${item.files?.length || 0}</td>
+                <td><span class="file-badge-v2">${item.files?.length || 0}</span></td>
                 <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
                 <td>
-                  <button class="secondary" data-action="view-contract" data-id="${item.id}">详情</button>
-                  <button class="ghost" data-action="edit-contract" data-id="${item.id}">编辑</button>
+                  <div class="toolbar compact toolbar-row-v2">
+                    <button class="secondary" data-action="view-contract" data-id="${item.id}">详情</button>
+                    <button class="ghost" data-action="edit-contract" data-id="${item.id}">编辑</button>
+                  </div>
                 </td>
               </tr>`).join('')}
           </tbody>

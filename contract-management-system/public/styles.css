@@ -1365,3 +1365,71 @@ button.ghost:hover,
     font-size: 30px;
   }
 }
+
+/* Ledger polish */
+.ledger-panel-v2 {
+  gap: 0;
+}
+.ledger-head-v2 {
+  margin-bottom: 18px;
+}
+.ledger-head-v2 > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+.toolbar-ledger-v2 {
+  padding: 10px;
+  border-radius: 20px;
+  background: rgba(6, 14, 25, 0.62);
+  border: 1px solid rgba(56, 189, 248, 0.1);
+}
+.ledger-table-v2 {
+  border-radius: 24px;
+}
+.table-ledger-v2 {
+  min-width: 1100px;
+}
+.cell-code-v2 {
+  display: inline-flex;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  color: #9ee7ff;
+  font-size: 12px;
+  letter-spacing: .06em;
+}
+.cell-title-v2 {
+  color: #f8fbff;
+  font-size: 15px;
+}
+.cell-amount-v2 {
+  color: #f8fbff;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.file-badge-v2 {
+  display: inline-flex;
+  min-width: 34px;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(15, 118, 110, 0.16);
+  color: #99f6e4;
+  border: 1px solid rgba(45, 212, 191, 0.18);
+}
+.toolbar-row-v2 {
+  justify-content: flex-start;
+}
+.table-ledger-v2 tbody tr td {
+  padding-top: 16px;
+  padding-bottom: 16px;
+}
+@media (max-width: 820px) {
+  .toolbar-ledger-v2 {
+    width: 100%;
+  }
+  .table-ledger-v2 {
+    min-width: 980px;
+  }
+}
