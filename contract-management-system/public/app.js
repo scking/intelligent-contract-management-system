@@ -715,21 +715,26 @@ function contractsView() {
 
 function approvalsView() {
   return `
-    <section class="panel fade-in">
-      <div class="panel-head"><h3>审批中心</h3><span class="muted">已统一成“部门审批 → 法务审核 → 财务审核 → 领导终审 → 电子签章”的默认主线。</span></div>
-      <div class="table-wrap">
-        <table class="table">
+    <section class="panel fade-in panel-v2 ledger-panel-v2">
+      <div class="panel-head ledger-head-v2">
+        <div>
+          <h3>审批中心</h3>
+          <span class="muted">已统一成“部门审批 → 法务审核 → 财务审核 → 领导终审 → 电子签章”的默认主线。</span>
+        </div>
+      </div>
+      <div class="table-wrap table-wrap-soft ledger-table-v2">
+        <table class="table table-ledger-v2">
           <thead><tr><th>合同</th><th>审批节点</th><th>处理人</th><th>状态</th><th>意见</th><th>处理时间</th><th>操作</th></tr></thead>
           <tbody>
             ${state.approvals.map((item) => `
               <tr>
-                <td>${item.contract?.code || '-'}<br/><span class="muted">${item.contract?.name || ''}</span></td>
+                <td><strong class="cell-title-v2">${item.contract?.code || '-'}</strong><br/><span class="muted">${item.contract?.name || ''}</span></td>
                 <td>${item.nodeName}</td>
                 <td>${item.assignee}</td>
                 <td><span class="tag ${statusTag(item.status)}">${item.status}</span></td>
                 <td>${item.comment || '-'}</td>
                 <td>${item.handledAt || '-'}</td>
-                <td>${item.status === '待处理' ? `<button class="primary" data-action="approve" data-id="${item.id}">通过</button> <button class="danger" data-action="reject" data-id="${item.id}">驳回</button>` : '-'}</td>
+                <td>${item.status === '待处理' ? `<div class="toolbar compact toolbar-row-v2"><button class="primary" data-action="approve" data-id="${item.id}">通过</button><button class="danger" data-action="reject" data-id="${item.id}">驳回</button></div>` : '-'}</td>
               </tr>`).join('')}
           </tbody>
         </table>
