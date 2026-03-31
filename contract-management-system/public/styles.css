@@ -121,6 +121,7 @@ textarea { min-height: 96px; resize: vertical; }
   top: -120px;
   left: -100px;
   box-shadow: 0 0 80px rgba(56, 189, 248, 0.12);
+  animation: orbit-drift-a 14s ease-in-out infinite;
 }
 .orbit-b {
   width: 300px;
@@ -128,6 +129,7 @@ textarea { min-height: 96px; resize: vertical; }
   right: 28%;
   bottom: -110px;
   border-color: rgba(94, 234, 212, 0.2);
+  animation: orbit-drift-b 16s ease-in-out infinite;
 }
 .grid-lines {
   position: absolute;
@@ -138,6 +140,7 @@ textarea { min-height: 96px; resize: vertical; }
   background-size: 28px 28px;
   mask-image: linear-gradient(135deg, rgba(0,0,0,0.8), rgba(0,0,0,0.2));
   opacity: .42;
+  animation: grid-pan 18s linear infinite;
 }
 .hero-pane {
   position: relative;
@@ -264,6 +267,34 @@ textarea { min-height: 96px; resize: vertical; }
   gap: 10px;
   color: rgba(226, 232, 240, 0.84);
 }
+.hero-marquee {
+  position: relative;
+  margin-top: 26px;
+  display: flex;
+  gap: 28px;
+  overflow: hidden;
+  white-space: nowrap;
+  color: rgba(226, 232, 240, 0.48);
+  font-size: 11px;
+  letter-spacing: .24em;
+  text-transform: uppercase;
+}
+.hero-marquee span {
+  position: relative;
+  padding-left: 18px;
+  animation: marquee-glide 14s linear infinite;
+}
+.hero-marquee span::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(94, 234, 212, 0.8);
+  transform: translateY(-50%);
+}
 .status-dot {
   width: 10px;
   height: 10px;
@@ -364,6 +395,59 @@ textarea { min-height: 96px; resize: vertical; }
   color: var(--muted);
   line-height: 1.7;
 }
+.ops-preview {
+  position: relative;
+  z-index: 1;
+  margin-top: 18px;
+  padding: 18px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.82));
+  color: #e2e8f0;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.16);
+}
+.ops-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ops-preview-head strong {
+  font-size: 13px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.ops-preview-head span {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(94, 234, 212, 0.12);
+  color: #99f6e4;
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.ops-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.ops-preview-grid div {
+  padding: 14px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+}
+.ops-preview-grid b {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 24px;
+  color: #f8fafc;
+}
+.ops-preview-grid small {
+  color: rgba(226, 232, 240, 0.68);
+}
 .demo-box { display: none; }
 input[name="username"],
 input[name="password"] {
@@ -389,6 +473,28 @@ input[name="password"]:focus {
   25% { transform: translateX(-4px); }
   75% { transform: translateX(4px); }
 }
+
+@keyframes orbit-drift-a {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(16px, 12px, 0) scale(1.04); }
+}
+
+@keyframes orbit-drift-b {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-14px, -10px, 0) scale(0.96); }
+}
+
+@keyframes grid-pan {
+  0% { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(28px, 14px, 0); }
+}
+
+@keyframes marquee-glide {
+  0% { transform: translateX(0); }
+  50% { transform: translateX(-12px); }
+  100% { transform: translateX(0); }
+}
+
 .sidebar {
   width: 260px;
   background: rgba(36, 50, 56, 0.96);
@@ -542,6 +648,7 @@ input[name="password"]:focus {
   .hero-pane h1 { font-size: 38px; }
   .form-actions, .signal-strip, .security-callout { width: 100%; }
   .login-submit, .helper { width: 100%; }
+  .ops-preview-grid { grid-template-columns: 1fr; }
   .chart-row { grid-template-columns: 64px 1fr 36px; }
   .file-item { flex-direction: column; align-items: flex-start; }
   .drawer, .modal { width: 100%; height: auto; max-height: calc(100vh - 20px); border-radius: 20px; }

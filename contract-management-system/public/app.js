@@ -584,6 +584,12 @@ function loginView() {
               <div><span class="status-dot"></span> Secure access channel online</div>
             </div>
           </div>
+          <div class="hero-marquee" aria-hidden="true">
+            <span>CONTRACT DATA FABRIC</span>
+            <span>RISK SIGNAL ENGINE</span>
+            <span>FLOW GOVERNANCE</span>
+            <span>COMPLIANCE ARCHIVE</span>
+          </div>
         </section>
         <section class="login-form-pane login-form-pane-premium">
           <div class="login-panel-head">
@@ -607,6 +613,17 @@ function loginView() {
           <div class="login-side-note">
             <strong>Access Policy</strong>
             <span>首次上线阶段保留统一账号体系，登录后建议立即修改默认密码并按角色使用权限。</span>
+          </div>
+          <div class="ops-preview">
+            <div class="ops-preview-head">
+              <strong>今日运行视图</strong>
+              <span>Live</span>
+            </div>
+            <div class="ops-preview-grid">
+              <div><b>27</b><small>待处理审批</small></div>
+              <div><b>08</b><small>到期提醒</small></div>
+              <div><b>99.98%</b><small>系统可用性</small></div>
+            </div>
           </div>
         </section>
       </div>
