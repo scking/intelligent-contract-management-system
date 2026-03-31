@@ -33,7 +33,9 @@ const state = {
   saving: false,
   uploadProgress: 0,
   importProgress: 0,
-  toast: null
+  toast: null,
+  loginPending: false,
+  loginError: ''
 };
 
 function formatMoney(value) {
@@ -145,8 +147,9 @@ async function loadPageData() {
 async function handleLogin(event) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  const helper = document.querySelector('#login-error');
-  helper.textContent = '登录中...';
+  state.loginPending = true;
+  state.loginError = '';
+  render();
   try {
     const data = await api('/api/auth/login', {
       method: 'POST',
@@ -154,6 +157,7 @@ async function handleLogin(event) {
     });
     state.token = data.token;
     state.user = data.user;
+    state.loginPending = false;
     localStorage.setItem('cms-token', data.token);
     localStorage.setItem('cms-user', JSON.stringify(data.user));
     await loadPageData();
@@ -162,7 +166,9 @@ async function handleLogin(event) {
     }
     render();
   } catch (error) {
-    helper.textContent = error.message;
+    state.loginPending = false;
+    state.loginError = error.message || '登录失败，请稍后重试';
+    render();
   }
 }
 
@@ -530,34 +536,35 @@ function passwordModal() {
 }
 
 function loginView() {
+  const helperText = state.loginPending
+    ? '登录中...'
+    : (state.loginError || '请输入账号密码后登录。');
+  const helperClass = state.loginError ? 'helper helper-error' : 'helper';
   return `
     <div class="login-shell fade-in">
-      <div class="login-card">
-        <section class="hero-pane">
-          <div class="hero-badge">线上运行中 · 企业合同平台</div>
-          <h1>企业合同全流程管控，<br/>让审批、履约与归档统一在线</h1>
-          <p>围绕合同起草、审批、履约、收付款、归档与审计留痕建立统一工作台，适合先上线核心流程，再逐步扩展电子签章、消息通知与正式主数据体系。</p>
+      <div class="login-card aurora-card">
+        <section class="hero-pane hero-pane-glow">
+          <div class="hero-badge">Smart Tech Division · Contract OS</div>
+          <h1>智能科技分公司<br/>合同管理系统</h1>
+          <p>统一承载合同起草、审批流转、履约跟踪、收付款、归档与审计留痕，让业务、法务、财务在同一套在线系统内协同闭环。</p>
           <div class="hero-grid">
-            <div class="metric-chip"><strong>14</strong><span>覆盖核心业务模块</span></div>
-            <div class="metric-chip"><strong>RBAC</strong><span>角色权限与数据范围</span></div>
-            <div class="metric-chip"><strong>审计留痕</strong><span>关键操作全程记录</span></div>
-            <div class="metric-chip"><strong>在线可用</strong><span>已部署到服务器运行</span></div>
+            <div class="metric-chip"><strong>全流程</strong><span>起草到归档统一协同</span></div>
+            <div class="metric-chip"><strong>多角色</strong><span>业务、法务、财务联动</span></div>
+            <div class="metric-chip"><strong>可追踪</strong><span>节点状态与审计留痕</span></div>
+            <div class="metric-chip"><strong>已上线</strong><span>服务器正式运行中</span></div>
           </div>
         </section>
-        <section class="login-form-pane">
-          <h2>登录平台</h2>
-          <p>请输入系统账号与密码。首次上线阶段保留预置管理账号，登录后建议立即修改默认密码。</p>
-          <form class="form-grid" id="login-form">
-            <div><label>账号</label><input name="username" value="admin" required /></div>
-            <div><label>密码</label><input name="password" type="password" placeholder="请输入密码" required /></div>
-            <div class="form-actions"><button class="primary" type="submit">进入合同管理平台</button><span class="helper" id="login-error">请输入账号密码后登录。</span></div>
-          </form>
-          <div class="demo-box">
-            <strong>当前可用账号</strong><br/>
-            管理员：admin / Admin@123456<br/>
-            法务：legal / Legal@123456<br/>
-            财务：finance / Finance@123456
+        <section class="login-form-pane login-form-pane-premium">
+          <div class="login-panel-head">
+            <span class="eyebrow">Secure Access</span>
+            <h2>欢迎登录</h2>
+            <p>请输入系统账号与密码，进入智能科技分公司合同管理系统。</p>
           </div>
+          <form class="form-grid" id="login-form">
+            <div><label>账号</label><input name="username" placeholder="请输入账号" required /></div>
+            <div><label>密码</label><input name="password" type="password" placeholder="请输入密码" required /></div>
+            <div class="form-actions"><button class="primary login-submit" type="submit" ${state.loginPending ? 'disabled' : ''}>${state.loginPending ? '登录中...' : '进入系统'}</button><span class="${helperClass}" id="login-error" role="status" aria-live="polite">${helperText}</span></div>
+          </form>
         </section>
       </div>
     </div>`;
@@ -929,7 +936,7 @@ function renderApp() {
   return `
     <div class="app-shell">
       <aside class="sidebar">
-        <div class="brand"><small>Enterprise Contract Platform</small><h2 style="margin:8px 0 0;">企业合同管理平台</h2></div>
+        <div class="brand"><small>Smart Tech Division</small><h2 style="margin:8px 0 0;">智能科技分公司合同管理系统</h2></div>
         <div class="nav-group">
           ${navItems.map(([key, label]) => `<button class="nav-item ${state.page === key ? 'active' : ''}" data-nav="${key}">${label}</button>`).join('')}
         </div>
