@@ -1,12 +1,12 @@
 :root {
   --bg: #07111b;
   --bg-accent: #0f1e2d;
-  --surface: rgba(248, 250, 252, 0.82);
-  --surface-strong: #f8fafc;
+  --surface: rgba(9, 18, 31, 0.82);
+  --surface-strong: #0f172a;
   --surface-dark: #0f172a;
   --border: rgba(100, 116, 139, 0.18);
-  --text: #0f172a;
-  --muted: #5f6f86;
+  --text: #e5eef8;
+  --muted: #91a4bb;
   --primary: #0f766e;
   --warn: #c0841a;
   --danger: #b42318;
@@ -77,15 +77,16 @@ button {
 }
 button:hover { transform: translateY(-1px); }
 button.primary { background: var(--primary); color: #fff; box-shadow: 0 10px 24px rgba(15, 118, 110, 0.18); }
-button.secondary { background: rgba(15, 23, 42, 0.06); color: var(--text); }
-button.ghost { background: rgba(255,255,255,0.3); border: 1px solid var(--border); }
+button.secondary { background: rgba(15, 23, 42, 0.82); color: #dbeafe; border: 1px solid rgba(56, 189, 248, 0.18); }
+button.ghost { background: rgba(8, 15, 26, 0.68); color: #cbd5e1; border: 1px solid rgba(148, 163, 184, 0.18); }
 button.danger { background: #ffe0de; color: var(--danger); }
 input, select, textarea {
   width: 100%;
-  border: 1px solid rgba(100, 116, 139, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.14);
   border-radius: 16px;
   padding: 12px 14px;
-  background: rgba(255,255,255,0.92);
+  color: #e2e8f0;
+  background: rgba(6, 14, 25, 0.88);
 }
 textarea { min-height: 96px; resize: vertical; }
 
@@ -121,11 +122,11 @@ textarea { min-height: 96px; resize: vertical; }
 }
 .login-card {
   width: min(1320px, 100%);
-  background: rgba(246, 248, 252, 0.72);
-  backdrop-filter: blur(24px);
-  border: 1px solid rgba(255,255,255,0.26);
+  background: rgba(4, 10, 20, 0.7);
+  backdrop-filter: blur(18px);
+  border: 1px solid rgba(56, 189, 248, 0.14);
   border-radius: 36px;
-  box-shadow: 0 36px 120px rgba(2, 8, 23, 0.32);
+  box-shadow: 0 36px 120px rgba(2, 8, 23, 0.5);
   overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1.12fr) minmax(360px, .88fr);
@@ -281,9 +282,9 @@ textarea { min-height: 96px; resize: vertical; }
   align-items: center;
   padding: 8px 12px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.12);
-  color: rgba(241, 245, 249, 0.88);
+  background: rgba(8, 15, 26, 0.68);
+  border: 1px solid rgba(56, 189, 248, 0.14);
+  color: rgba(224, 242, 254, 0.92);
   font-size: 12px;
   letter-spacing: .06em;
   text-transform: uppercase;
@@ -671,7 +672,7 @@ input[name="password"]:focus {
   grid-template-columns: minmax(0, 1.1fr) minmax(320px, .9fr);
 }
 .panel-emphasis {
-  background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,255,255,0.66));
+  background: linear-gradient(180deg, rgba(8, 16, 28, 0.92), rgba(10, 21, 36, 0.86));
 }
 .panel-dark {
   background: linear-gradient(180deg, rgba(9, 16, 28, 0.98), rgba(15, 38, 59, 0.94));
@@ -684,7 +685,8 @@ input[name="password"]:focus {
 }
 .table-wrap-soft {
   border-radius: 20px;
-  background: rgba(255,255,255,0.38);
+  background: rgba(4, 10, 20, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.1);
 }
 .chart-row-premium span,
 .chart-row-premium strong {
@@ -695,8 +697,9 @@ input[name="password"]:focus {
   color: rgba(226, 232, 240, 0.84);
 }
 .list-card-glow {
-  background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,255,255,0.56));
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.38);
+  background: linear-gradient(180deg, rgba(8, 16, 28, 0.88), rgba(10, 21, 36, 0.8));
+  box-shadow: inset 0 1px 0 rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.12);
 }
 .topbar {
   display: flex; justify-content: space-between; align-items: center; gap: 18px;
@@ -715,10 +718,10 @@ input[name="password"]:focus {
 .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .stat-grid.six { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 .stat-card, .panel {
-  background: linear-gradient(180deg, rgba(248,250,252,0.84), rgba(255,255,255,0.72));
+  background: linear-gradient(180deg, rgba(7, 15, 27, 0.94), rgba(10, 21, 36, 0.88));
   border-radius: 28px;
   box-shadow: var(--shadow);
-  border: 1px solid rgba(255,255,255,0.42);
+  border: 1px solid rgba(56, 189, 248, 0.12);
 }
 .stat-card { padding: 18px; }
 .stat-card span { color: var(--muted); display: block; margin-bottom: 8px; }
@@ -736,10 +739,10 @@ input[name="password"]:focus {
 .tag {
   display: inline-flex; align-items: center; padding: 5px 10px; border-radius: 999px; font-size: 12px; font-weight: 700;
 }
-.tag.teal { background: #d7f1ec; color: var(--primary); }
-.tag.gold { background: #fff1dd; color: var(--warn); }
-.tag.red { background: #ffe0de; color: var(--danger); }
-.tag.green { background: #e0f6e8; color: var(--success); }
+.tag.teal { background: rgba(34, 211, 238, 0.12); color: #67e8f9; border: 1px solid rgba(34, 211, 238, 0.18); }
+.tag.gold { background: rgba(251, 191, 36, 0.12); color: #fde68a; border: 1px solid rgba(251, 191, 36, 0.16); }
+.tag.red { background: rgba(239, 68, 68, 0.12); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.16); }
+.tag.green { background: rgba(74, 222, 128, 0.12); color: #86efac; border: 1px solid rgba(74, 222, 128, 0.16); }
 .columns-2 { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(320px, .8fr); gap: 18px; }
 .columns-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; }
 .list-card, .detail-card, .sub-panel {
@@ -777,8 +780,8 @@ input[name="password"]:focus {
 }
 .mini-chart { display: grid; gap: 14px; }
 .chart-row { display: grid; grid-template-columns: 74px 1fr 40px; gap: 10px; align-items: center; }
-.chart-bar { height: 12px; background: rgba(36, 50, 56, 0.08); border-radius: 999px; overflow: hidden; }
-.chart-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #0f766e, #d1a14a); }
+.chart-bar { height: 12px; background: rgba(15, 23, 42, 0.82); border-radius: 999px; overflow: hidden; border: 1px solid rgba(56, 189, 248, 0.08); }
+.chart-bar i { display: block; height: 100%; border-radius: 999px; background: linear-gradient(90deg, #22d3ee, #0f766e 58%, #fbbf24); box-shadow: 0 0 18px rgba(34, 211, 238, 0.35); }
 .timeline { display: grid; gap: 12px; }
 .timeline-item { display: flex; align-items: flex-start; gap: 12px; }
 .timeline-item em {
@@ -901,9 +904,9 @@ input[name="password"]:focus {
   gap: 10px;
   padding: 12px 16px;
   border-radius: 999px;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.14);
-  color: rgba(241,245,249,.9);
+  background: rgba(8, 15, 26, 0.76);
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  color: rgba(224,242,254,.96);
   letter-spacing: .05em;
 }
 .hero-board {
@@ -960,14 +963,16 @@ input[name="password"]:focus {
   align-items: stretch;
 }
 .input-block-showcase {
-  background: rgba(255,255,255,0.82);
-  border-color: rgba(148,163,184,.16);
+  background: rgba(8, 15, 26, 0.92);
+  border-color: rgba(56,189,248,.14);
 }
 .login-side-note-showcase {
-  background: linear-gradient(180deg, rgba(15, 118, 110, 0.1), rgba(15, 118, 110, 0.03));
+  background: linear-gradient(180deg, rgba(8, 15, 26, 0.86), rgba(10, 21, 36, 0.78));
+  border: 1px solid rgba(56, 189, 248, 0.12);
 }
 .ops-preview-showcase {
-  background: linear-gradient(180deg, rgba(9, 16, 28, 0.98), rgba(12, 31, 49, 0.92));
+  background: linear-gradient(180deg, rgba(3, 9, 18, 0.98), rgba(6, 20, 36, 0.94));
+  border: 1px solid rgba(56, 189, 248, 0.16);
 }
 .dashboard-grid-showcase {
   gap: 22px;
@@ -1051,3 +1056,10 @@ input[name="password"]:focus {
     font-size: 32px;
   }
 }
+
+.topbar p, .panel h3, .stat-card span, .login-panel-head p, .login-side-note span, .table th, .table td, .muted { color: var(--muted); }
+.hero-pane h1, .panel-hero h2, .topbar h1, .stat-card strong, .ops-preview-grid b, .hero-board-grid b { color: #f8fbff; }
+.table td, .table th { border-bottom-color: rgba(56, 189, 248, 0.08); }
+.table tbody tr:hover { background: rgba(34, 211, 238, 0.04); }
+.brand-mark, .hero-board, .hero-health-card, .hero-side-mini-panel, .ops-preview { position: relative; }
+.brand-mark::after, .hero-board::after, .hero-health-card::after, .hero-side-mini-panel::after, .ops-preview::after { content: ""; position: absolute; inset: 8px; border: 1px solid rgba(56, 189, 248, 0.08); border-radius: inherit; pointer-events: none; }
