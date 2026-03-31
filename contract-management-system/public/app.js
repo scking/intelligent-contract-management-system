@@ -35,7 +35,8 @@ const state = {
   importProgress: 0,
   toast: null,
   loginPending: false,
-  loginError: ''
+  loginError: '',
+  loginFieldError: false
 };
 
 function formatMoney(value) {
@@ -149,6 +150,7 @@ async function handleLogin(event) {
   const form = new FormData(event.currentTarget);
   state.loginPending = true;
   state.loginError = '';
+  state.loginFieldError = false;
   render();
   try {
     const data = await api('/api/auth/login', {
@@ -158,6 +160,7 @@ async function handleLogin(event) {
     state.token = data.token;
     state.user = data.user;
     state.loginPending = false;
+    state.loginFieldError = false;
     localStorage.setItem('cms-token', data.token);
     localStorage.setItem('cms-user', JSON.stringify(data.user));
     await loadPageData();
@@ -168,6 +171,7 @@ async function handleLogin(event) {
   } catch (error) {
     state.loginPending = false;
     state.loginError = error.message || '登录失败，请稍后重试';
+    state.loginFieldError = true;
     render();
   }
 }
@@ -540,6 +544,7 @@ function loginView() {
     ? '登录中...'
     : (state.loginError || '请输入账号密码后登录。');
   const helperClass = state.loginError ? 'helper helper-error' : 'helper';
+  const inputClass = state.loginFieldError ? 'input-error' : '';
   return `
     <div class="login-shell fade-in">
       <div class="login-card aurora-card">
@@ -561,8 +566,8 @@ function loginView() {
             <p>请输入系统账号与密码，进入智能科技分公司合同管理系统。</p>
           </div>
           <form class="form-grid" id="login-form">
-            <div><label>账号</label><input name="username" placeholder="请输入账号" required /></div>
-            <div><label>密码</label><input name="password" type="password" placeholder="请输入密码" required /></div>
+            <div><label>账号</label><input class="${inputClass}" name="username" placeholder="请输入账号" required /></div>
+            <div><label>密码</label><input class="${inputClass}" name="password" type="password" placeholder="请输入密码" required /></div>
             <div class="form-actions"><button class="primary login-submit" type="submit" ${state.loginPending ? 'disabled' : ''}>${state.loginPending ? '登录中...' : '进入系统'}</button><span class="${helperClass}" id="login-error" role="status" aria-live="polite">${helperText}</span></div>
           </form>
         </section>
@@ -965,8 +970,16 @@ function renderApp() {
     </div>`;
 }
 
+function clearLoginError() {
+  if (!state.loginError && !state.loginFieldError) return;
+  state.loginError = '';
+  state.loginFieldError = false;
+  render();
+}
+
 function bindEvents() {
   document.querySelector('#login-form')?.addEventListener('submit', handleLogin);
+  document.querySelectorAll('#login-form input').forEach((input) => input.addEventListener('input', clearLoginError));
   document.querySelectorAll('[data-nav]').forEach((btn) => btn.addEventListener('click', () => { state.page = btn.dataset.nav; render(); }));
   document.querySelectorAll('[data-action="logout"]').forEach((btn) => btn.addEventListener('click', logout));
   document.querySelectorAll('[data-action="open-user-modal"]').forEach((btn) => btn.addEventListener('click', () => openUserModal()));
