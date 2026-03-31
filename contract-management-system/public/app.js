@@ -823,7 +823,7 @@ function contractModal() {
   const item = state.editingContract || {};
   return `
     <div class="modal-mask">
-      <div class="modal fade-in">
+      <div class="modal fade-in modal-v2">
         <div class="panel-head"><h3>${state.editingContract ? '编辑合同' : '新建合同'}</h3><button class="ghost" data-action="close-modal">关闭</button></div>
         <form id="contract-form">
           <div class="modal-grid three-cols">
@@ -876,7 +876,7 @@ function importModal() {
   const result = state.importResult;
   return `
     <div class="modal-mask">
-      <div class="modal fade-in import-modal">
+      <div class="modal fade-in import-modal modal-v2">
         <div class="panel-head"><h3>${isExcel ? '导入 Excel/CSV 台账' : isOcr ? 'OCR 识别 PDF/图片' : '解析 Word/PDF/TXT 合同'}</h3><button class="ghost" data-action="close-import">关闭</button></div>
         <form id="import-form" class="form-grid">
           <div class="upload-box">
@@ -895,7 +895,7 @@ function detailDrawer() {
   const item = state.contractDetail;
   return `
     <div class="modal-mask side-mask">
-      <div class="drawer fade-in">
+      <div class="drawer fade-in drawer-v2">
         <div class="panel-head"><h3>${item.code} · ${item.name}</h3><button class="ghost" data-action="close-detail">关闭</button></div>
         <div class="detail-grid">
           <div class="detail-card"><span>合同状态</span><strong class="tag ${statusTag(item.status)}">${item.status}</strong></div>
