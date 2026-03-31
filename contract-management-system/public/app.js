@@ -547,41 +547,48 @@ function loginView() {
   const inputClass = state.loginFieldError ? 'input-error' : '';
   return `
     <div class="login-shell fade-in">
-      <div class="login-card aurora-card aurora-card-grid">
+      <div class="login-card aurora-card aurora-card-grid login-card-showcase">
         <div class="login-atmosphere">
           <span class="orbit orbit-a"></span>
           <span class="orbit orbit-b"></span>
           <span class="grid-lines"></span>
+          <span class="beam beam-a"></span>
+          <span class="beam beam-b"></span>
         </div>
-        <section class="hero-pane hero-pane-glow">
+        <section class="hero-pane hero-pane-glow hero-pane-showcase">
           <div class="hero-badge">Smart Tech Division · Contract OS</div>
-          <div class="brand-lockup">
-            <div class="brand-mark" aria-hidden="true">
+          <div class="brand-lockup brand-lockup-showcase">
+            <div class="brand-mark brand-mark-xl" aria-hidden="true">
               <span></span>
               <span></span>
               <span></span>
             </div>
             <div>
               <small>Enterprise Contract Intelligence Platform</small>
-              <h1>智能科技分公司<br/>合同管理系统</h1>
+              <h1>合同智能中枢<br/>Command Surface</h1>
             </div>
           </div>
-          <p>统一承载合同起草、审批流转、履约跟踪、收付款、归档与审计留痕，让业务、法务、财务在同一套在线系统内协同闭环。</p>
-          <div class="hero-grid">
-            <div class="metric-chip"><strong>全流程</strong><span>起草到归档统一协同</span></div>
-            <div class="metric-chip"><strong>多角色</strong><span>业务、法务、财务联动</span></div>
-            <div class="metric-chip"><strong>可追踪</strong><span>节点状态与审计留痕</span></div>
-            <div class="metric-chip"><strong>已上线</strong><span>服务器正式运行中</span></div>
+          <p>让合同起草、审批、履约、回款、归档与审计留痕进入同一块可视化指挥界面，不只是管理系统，更像业务与法务共享的操作中枢。</p>
+          <div class="hero-grid hero-grid-showcase">
+            <div class="metric-chip metric-chip-large"><strong>4D</strong><span>合同生命周期可视域</span></div>
+            <div class="metric-chip metric-chip-large"><strong>24H</strong><span>流程、风控、归档持续在线</span></div>
+            <div class="metric-chip metric-chip-large"><strong>1 屏</strong><span>经营视图与合规视图同屏联动</span></div>
+            <div class="metric-chip metric-chip-large"><strong>0 断层</strong><span>业务、法务、财务共享上下文</span></div>
           </div>
-          <div class="hero-footer">
-            <div class="signal-strip">
-              <span>风控感知</span>
-              <span>审批协同</span>
-              <span>归档审计</span>
+          <div class="hero-command-strip">
+            <div class="command-pill"><span class="status-dot"></span> Contract Graph Online</div>
+            <div class="command-pill">Risk Signal Linked</div>
+            <div class="command-pill">Archive Matrix Ready</div>
+          </div>
+          <div class="hero-board">
+            <div class="hero-board-head">
+              <strong>Live Enterprise View</strong>
+              <span>SYNCED</span>
             </div>
-            <div class="hero-status-card">
-              <strong>Platform Status</strong>
-              <div><span class="status-dot"></span> Secure access channel online</div>
+            <div class="hero-board-grid">
+              <div><b>268</b><small>本期有效合同</small></div>
+              <div><b>31</b><small>流转中的审批链</small></div>
+              <div><b>12</b><small>高优先级到期事件</small></div>
             </div>
           </div>
           <div class="hero-marquee" aria-hidden="true">
@@ -591,30 +598,30 @@ function loginView() {
             <span>COMPLIANCE ARCHIVE</span>
           </div>
         </section>
-        <section class="login-form-pane login-form-pane-premium">
+        <section class="login-form-pane login-form-pane-premium login-form-pane-showcase">
           <div class="login-panel-head">
             <span class="eyebrow">Secure Access</span>
-            <h2>欢迎登录</h2>
-            <p>请输入系统账号与密码，进入智能科技分公司合同管理系统。</p>
+            <h2>进入系统</h2>
+            <p>通过企业访问入口进入合同智能中枢，查看审批积压、执行态势与风险分布。</p>
           </div>
-          <div class="security-callout">
+          <div class="security-callout security-callout-stack">
             <span class="security-chip">Role-Based Access</span>
             <span class="security-chip">Audit Trail</span>
             <span class="security-chip">Encrypted Session</span>
           </div>
           <form class="form-grid" id="login-form">
-            <div class="input-block"><label>账号</label><input class="${inputClass}" name="username" placeholder="请输入账号" required /></div>
-            <div class="input-block"><label>密码</label><input class="${inputClass}" name="password" type="password" placeholder="请输入密码" required /></div>
-            <div class="form-actions">
+            <div class="input-block input-block-showcase"><label>账号</label><input class="${inputClass}" name="username" placeholder="请输入账号" required /></div>
+            <div class="input-block input-block-showcase"><label>密码</label><input class="${inputClass}" name="password" type="password" placeholder="请输入密码" required /></div>
+            <div class="form-actions form-actions-stack">
               <button class="primary login-submit" type="submit" ${state.loginPending ? 'disabled' : ''}>${state.loginPending ? '登录中...' : '进入系统'}</button>
               <span class="${helperClass}" id="login-error" role="status" aria-live="polite">${helperText}</span>
             </div>
           </form>
-          <div class="login-side-note">
+          <div class="login-side-note login-side-note-showcase">
             <strong>Access Policy</strong>
             <span>首次上线阶段保留统一账号体系，登录后建议立即修改默认密码并按角色使用权限。</span>
           </div>
-          <div class="ops-preview">
+          <div class="ops-preview ops-preview-showcase">
             <div class="ops-preview-head">
               <strong>今日运行视图</strong>
               <span>Live</span>
@@ -639,36 +646,41 @@ function dashboardView() {
   ];
   const max = Math.max(...byStatus.map((item) => item.value), 1);
   return `
-    <div class="page-grid fade-in dashboard-grid-premium">
-      <section class="dashboard-hero panel panel-hero">
-        <div>
+    <div class="page-grid fade-in dashboard-grid-premium dashboard-grid-showcase">
+      <section class="dashboard-hero panel panel-hero panel-hero-showcase">
+        <div class="dashboard-hero-copy">
           <span class="hero-kicker">Enterprise Command Center</span>
-          <h2>合同执行态势总览</h2>
-          <p>统一查看合同总额、审批积压、到期风险与回款进度，让业务、法务、财务共用一套实时驾驶舱。</p>
-          <div class="hero-inline-metrics">
+          <h2>合同经营与风控指挥面</h2>
+          <p>在一块中控面板里同时查看合同总额、审批流转、到期提醒、回款压力与风险分布，让经营视角和合规视角不再分裂。</p>
+          <div class="hero-inline-metrics hero-inline-metrics-showcase">
             <span>在途审批 ${stats.approvalPending}</span>
             <span>风险合同 ${stats.riskContracts}</span>
             <span>到期提醒 ${stats.expiringSoon}</span>
           </div>
         </div>
-        <div class="dashboard-hero-side">
-          <div class="hero-health-card">
+        <div class="dashboard-hero-side dashboard-hero-side-grid">
+          <div class="hero-health-card hero-health-card-showcase">
             <strong>今日运行状态</strong>
             <div><span class="status-dot"></span> 数据同步正常 / 审批引擎在线</div>
             <small>最近一次指标刷新：实时数据快照</small>
           </div>
+          <div class="hero-side-mini-panel">
+            <strong>Flow Pressure</strong>
+            <b>${stats.approvalPending}</b>
+            <span>审批链路待处理节点</span>
+          </div>
         </div>
       </section>
-      <div class="stat-grid six stat-grid-premium">
-        <div class="stat-card stat-card-accent"><span>合同总额</span><strong>${formatMoney(stats.totalAmount)}</strong><small class="muted">已纳入台账合同</small></div>
+      <div class="stat-grid six stat-grid-premium stat-grid-showcase">
+        <div class="stat-card stat-card-accent stat-card-feature"><span>合同总额</span><strong>${formatMoney(stats.totalAmount)}</strong><small class="muted">已纳入台账合同</small></div>
         <div class="stat-card"><span>审批中</span><strong>${stats.approvalPending}</strong><small class="muted">待推进流程</small></div>
         <div class="stat-card"><span>生效合同</span><strong>${stats.activeContracts}</strong><small class="muted">履约执行中</small></div>
         <div class="stat-card"><span>到期提醒</span><strong>${stats.expiringSoon}</strong><small class="muted">年内到期</small></div>
         <div class="stat-card"><span>待回款</span><strong>${formatMoney(stats.receivable)}</strong><small class="muted">应收未收</small></div>
         <div class="stat-card stat-card-warning"><span>风险合同</span><strong>${stats.riskContracts}</strong><small class="muted">预警 / 纠纷 / 诉讼</small></div>
       </div>
-      <div class="columns-2 columns-hero-split">
-        <section class="panel panel-emphasis">
+      <div class="columns-2 columns-hero-split columns-showcase-main">
+        <section class="panel panel-emphasis panel-table-showcase">
           <div class="panel-head"><h3>最新合同</h3><div class="toolbar"><button class="secondary" data-action="open-create">新建合同</button></div></div>
           <div class="table-wrap table-wrap-soft"><table class="table"><thead><tr><th>编号</th><th>名称</th><th>项目</th><th>金额</th><th>状态</th></tr></thead><tbody>
           ${(state.dashboard?.latestContracts || []).map((item) => `
@@ -681,11 +693,11 @@ function dashboardView() {
             </tr>`).join('')}
           </tbody></table></div>
         </section>
-        <section class="panel panel-dark">
+        <section class="panel panel-dark panel-analytics-showcase">
           <div class="panel-head"><h3>审批与风险趋势</h3><span class="muted">关键压力位</span></div>
           <div class="mini-chart">
             ${byStatus.map((item) => `
-              <div class="chart-row chart-row-premium">
+              <div class="chart-row chart-row-premium chart-row-showcase">
                 <span>${item.label}</span>
                 <div class="chart-bar"><i style="width:${(item.value / max) * 100}%"></i></div>
                 <strong>${item.value}</strong>
@@ -694,20 +706,20 @@ function dashboardView() {
           <div class="footer-tip footer-tip-dark" style="margin-top:16px;">当前版已将合同详情、编号规则、付款节点、履约里程碑、流程链路统一到一个模型里。</div>
         </section>
       </div>
-      <div class="columns-2 columns-hero-split">
-        <section class="panel panel-emphasis">
+      <div class="columns-2 columns-hero-split columns-showcase-main">
+        <section class="panel panel-emphasis panel-card-showcase">
           <div class="panel-head"><h3>待办审批</h3><span class="muted">优先处理积压节点</span></div>
           <div class="columns-3">${(state.dashboard?.todoApprovals || []).map((item) => `
-            <div class="list-card list-card-glow">
+            <div class="list-card list-card-glow list-card-showcase">
               <strong>${item.nodeName}</strong>
               <div class="muted">处理人：${item.assignee}</div>
               <div class="muted">状态：${item.status}</div>
             </div>`).join('') || '<div class="muted">暂无待办审批。</div>'}</div>
         </section>
-        <section class="panel panel-emphasis">
+        <section class="panel panel-emphasis panel-card-showcase">
           <div class="panel-head"><h3>高风险合同</h3><span class="muted">聚焦预警与纠纷</span></div>
           ${(state.dashboard?.riskTop || []).map((item) => `
-            <div class="list-card compact-card list-card-glow">
+            <div class="list-card compact-card list-card-glow list-card-showcase">
               <strong>${item.code} · ${item.name}</strong>
               <div class="muted">风险等级：${item.riskLevel} · ${item.approvalStage}</div>
             </div>`).join('') || '<div class="muted">暂无风险合同。</div>'}
