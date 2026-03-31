@@ -550,20 +550,21 @@ input[name="password"]:focus {
 .brand {
   padding: 18px;
   border-radius: 24px;
-  background: linear-gradient(145deg, rgba(255,255,255,0.08), rgba(15,118,110,0.12));
-  border: 1px solid rgba(255,255,255,0.08);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  background: linear-gradient(145deg, rgba(8, 15, 26, 0.88), rgba(10, 28, 46, 0.84));
+  border: 1px solid rgba(34, 211, 238, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.04);
 }
-.brand small { color: rgba(248,251,248,0.64); }
+.brand small { color: rgba(173, 216, 242, 0.7); }
 .nav-group { display: grid; gap: 8px; }
 .nav-item {
   text-align: left;
   border-radius: 16px;
-  background: transparent;
-  color: rgba(248,251,248,0.86);
+  background: rgba(255,255,255,0.02);
+  color: rgba(223, 239, 255, 0.9);
   padding: 12px 14px;
+  border: 1px solid transparent;
 }
-.nav-item.active { background: rgba(215, 241, 236, 0.14); color: #fff; }
+.nav-item.active { background: linear-gradient(180deg, rgba(34, 211, 238, 0.12), rgba(14, 165, 233, 0.08)); color: #fff; border-color: rgba(34, 211, 238, 0.16); }
 
 .main-pane { flex: 1; padding: clamp(16px, 2.6vw, 28px); display: grid; gap: 18px; min-width: 0; }
 .dashboard-grid-premium {
@@ -703,10 +704,10 @@ input[name="password"]:focus {
 }
 .topbar {
   display: flex; justify-content: space-between; align-items: center; gap: 18px;
-  padding: clamp(16px, 2.2vw, 24px); background: linear-gradient(180deg, rgba(248,250,252,0.86), rgba(255,255,255,0.74)); border-radius: 28px; box-shadow: var(--shadow); border: 1px solid rgba(255,255,255,0.42);
+  padding: clamp(16px, 2.2vw, 24px); background: linear-gradient(180deg, rgba(7, 15, 27, 0.98), rgba(10, 21, 36, 0.94)); border-radius: 28px; box-shadow: var(--shadow); border: 1px solid rgba(34, 211, 238, 0.12);
 }
-.topbar h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); }
-.topbar p { margin: 6px 0 0; color: var(--muted); }
+.topbar h1 { margin: 0; font-size: clamp(24px, 3vw, 34px); color: #ffffff; }
+.topbar p { margin: 6px 0 0; color: #adc0d3; }
 .user-card {
   min-width: 240px;
   padding: 14px 16px;
@@ -1633,3 +1634,7 @@ button.ghost:hover,
 .stat-grid-v2 .muted, .panel-v2 .muted { color: #9fb3c9; }
 .panel-v2 .panel-head span { color: #b8cce0; }
 .panel-v2 .panel-head h3 { color: #f8fbff; }
+
+.brand h2 { color: #f8fbff; }
+.nav-item:hover { background: rgba(34, 211, 238, 0.08); }
+.user-card .muted { color: #afc2d5; }
